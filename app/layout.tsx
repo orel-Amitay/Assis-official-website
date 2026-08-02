@@ -46,7 +46,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${manrope.variable} ${jakarta.variable} ${crimson.variable}`}>
-      <body className="bg-white text-foreground antialiased">
+      <body className="bg-white text-foreground antialiased" suppressHydrationWarning>
         <ScrollRoot>{children}</ScrollRoot>
       </body>
     </html>

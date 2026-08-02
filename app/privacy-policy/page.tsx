@@ -180,16 +180,40 @@ export default function PrivacyPolicyPage() {
           <section className="space-y-4">
             <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'17. Contact Us'}</h2>
             <p>{'For questions, requests, or concerns regarding privacy or personal information, please contact us:'}</p>
-            <ul className="list-disc space-y-2 pl-5">
-              <li>{'Assis Online Inc.'}</li>
-              <li>{'28 Geary St STE 650, 585'}</li>
-              <li>{'San Francisco, CA 94108'}</li>
-              <li>{'United States'}</li>
-              <li>{'Email:'}</li>
-              <li>{'accountant@assis.care'}</li>
-              <li>{'Website:'}</li>
-              <li>{'https://assis.care'}</li>
-            </ul>
+            <address className="not-italic rounded-2xl border border-[#dfe3f5] bg-[#eef0fa] px-6 py-7 sm:px-8 sm:py-8">
+              <div className="space-y-5 text-[15px] leading-relaxed text-zinc-600 sm:text-base">
+                <div className="space-y-1">
+                  <p className="font-semibold text-foreground">Assis Online Inc.</p>
+                  <p>
+                    28 Geary St STE 650, 585
+                    <br />
+                    San Francisco, CA 94108
+                    <br />
+                    United States
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p>
+                    <span className="font-semibold text-foreground">Email:</span>{' '}
+                    <a
+                      href="mailto:accountant@assis.care"
+                      className="text-assis-blue transition hover:text-assis-blue-deep"
+                    >
+                      accountant@assis.care
+                    </a>
+                  </p>
+                  <p>
+                    <span className="font-semibold text-foreground">Website:</span>{' '}
+                    <a
+                      href="https://assis.care"
+                      className="text-assis-blue transition hover:text-assis-blue-deep"
+                    >
+                      https://assis.care
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </address>
           </section>
         </div>
 
