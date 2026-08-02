@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 189" fill="none" role="img" aria-label="Assis">
+  <path
+    d="M100,182 C100,182 14,114 14,62 C14,26 41,5 73,5 C93,5 100,22 100,37 C100,22 107,5 127,5 C159,5 186,26 186,62 C186,114 100,182 100,182 Z"
+    fill="#1d6fee"
+  />
+  <ellipse cx="62" cy="48" rx="14" ry="9" fill="white" transform="rotate(-28 62 48)" />
+  <text
+    x="100"
+    y="108"
+    text-anchor="middle"
+    fill="white"
+    font-family="var(--font-jakarta), 'Plus Jakarta Sans', system-ui, sans-serif"
+    font-size="28"
+    font-weight="800"
+    letter-spacing="-0.03em"
+  >Assis</text>
+</svg>
