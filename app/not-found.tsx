@@ -1,21 +1,22 @@
 import Link from "next/link";
-import SiteShell from "@/components/tennis-club/SiteShell";
+import AssisLogo from "@/components/AssisLogo";
 
 export default function NotFound() {
   return (
-    <SiteShell>
-      <div className="mx-auto flex min-h-[50vh] max-w-lg flex-col items-center justify-center px-4 py-20 text-center">
-        <h1 className="font-display text-3xl tracking-[0.2em]">404</h1>
-        <p className="mt-4 text-sm text-muted">
-          This page could not be found.
-        </p>
-        <Link
-          href="/"
-          className="mt-8 bg-foreground px-6 py-3 text-[11px] font-semibold tracking-[0.18em] text-white"
-        >
-          BACK TO HOME
-        </Link>
-      </div>
-    </SiteShell>
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#f7f8fa] px-5 text-center">
+      <AssisLogo height={22} />
+      <h1 className="font-display mt-10 text-4xl font-bold tracking-[-0.04em] text-foreground">
+        404
+      </h1>
+      <p className="mt-3 max-w-sm text-sm text-muted-foreground">
+        This page could not be found.
+      </p>
+      <Link
+        href="/"
+        className="mt-8 inline-flex h-11 items-center justify-center rounded-full bg-assis-blue px-6 text-sm font-semibold text-white transition hover:bg-assis-blue-deep"
+      >
+        Back to home
+      </Link>
+    </div>
   );
 }

@@ -1,0 +1,32 @@
+{
+  "projectName": "assis-saas-landing-saas-assis-website",
+  "projectId": "prj_AkxHRNXwBlQc4FyfsfmDEguXMVvl",
+  "orgId": "team_Xcfi6xjoVEsSqE0uPEfdszrE",
+  "teamSlug": "assis10",
+  "productionDomain": "https://assis.care",
+  "githubRepo": "https://github.com/orel-Amitay/Assis-official-website.git",
+  "framework": "nextjs",
+  "notes": [
+    "This file has project IDs only — not a secret token.",
+    "Partner must be invited to the Assis Vercel team (assis10), OR use a Vercel token from an account with access to this project.",
+    "Create a token at: https://vercel.com/account/tokens (scope: full account or the Assis team).",
+    "Never commit the Vercel token to GitHub."
+  ],
+  "partnerSetup": {
+    "linkExistingProject": [
+      "git clone https://github.com/orel-Amitay/Assis-official-website.git",
+      "cd Assis-official-website",
+      "npm install",
+      "npm i -g vercel",
+      "vercel login",
+      "mkdir -p .vercel",
+      "Copy this file's projectId/orgId into .vercel/project.json as: {\"projectId\":\"...\",\"orgId\":\"...\",\"projectName\":\"assis-saas-landing-saas-assis-website\"}",
+      "vercel --prod"
+    ],
+    "orConnectGitOnVercel": [
+      "Open https://vercel.com/assis10/assis-saas-landing-saas-assis-website/settings/git",
+      "Connect the GitHub repo orel-Amitay/Assis-official-website",
+      "Push to main → auto production deploy to assis.care"
+    ]
+  }
+}

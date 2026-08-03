@@ -83,7 +83,7 @@ export default function Footer() {
               </p>
               <ul className="space-y-2.5 text-sm text-white/70">
                 <li>
-                  <Link href="/privacy-policy" className="transition hover:text-white">
+                  <Link href="/PrivacyPolicy" className="transition hover:text-white">
                     Privacy Policy
                   </Link>
                 </li>

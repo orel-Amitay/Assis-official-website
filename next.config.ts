@@ -5,19 +5,19 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
-  images: {
-    remotePatterns: [
+  async redirects() {
+    return [
       {
-        protocol: "https",
-        hostname: "cdn.shopify.com",
-        pathname: "/s/files/**",
+        source: "/privacy-policy",
+        destination: "/PrivacyPolicy",
+        permanent: true,
       },
       {
-        protocol: "https",
-        hostname: "tennisclubfinejewelry.com",
-        pathname: "/cdn/shop/**",
+        source: "/privacy-policy/",
+        destination: "/PrivacyPolicy",
+        permanent: true,
       },
-    ],
+    ];
   },
 };
 

@@ -57,7 +57,7 @@ export default function Footer() {
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-assis-blue/10 py-6 text-xs text-zinc-400 sm:flex-row">
           <p>© {new Date().getFullYear()} Assis. All rights reserved.</p>
-          <a href="/privacy-policy" className="transition-colors hover:text-foreground">
+          <a href="/PrivacyPolicy" className="transition-colors hover:text-foreground">
             Privacy Policy
           </a>
         </div>
