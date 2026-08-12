@@ -1,4 +1,4 @@
-/** Shared scroll-driven section pacing — keep all step sections in sync. */
+/** Shared scroll-driven section pacing - keep all step sections in sync. */
 export const SCROLL_STEP_COUNT = 3;
 /** Taller scroll runway = smoother handoff between steps */
 export const SCROLL_CONTAINER_VH = 520;

@@ -6,15 +6,7 @@ import { useEffect, useState } from "react";
 import AssisLogo from "@/components/AssisLogo";
 import { useScrollRoot } from "@/components/ScrollRoot";
 import { BookDemoButton } from "@/components/DemoModal";
-
-const NAV_LINKS = [
-  { label: "Numbers", href: "#metrics" },
-  { label: "Store stories", href: "#cases" },
-  { label: "How it works", href: "#journey" },
-  { label: "Why Assis", href: "#position" },
-  { label: "FAQ", href: "#faq" },
-  { label: "Start", href: "#demo" },
-];
+import { LOGIN_URL, NAV_LINKS } from "@/lib/site-nav";
 
 export default function Nav() {
   const scrollRoot = useScrollRoot();
@@ -47,16 +39,16 @@ export default function Nav() {
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div className="relative mx-auto flex h-14 max-w-6xl items-center justify-between px-5 sm:px-10">
-        <a href="#top" className="shrink-0 transition-opacity hover:opacity-80">
+        <a href="/" className="shrink-0 transition-opacity hover:opacity-80">
           <AssisLogo height={18} />
         </a>
 
-        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 lg:flex">
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-5 xl:gap-6 lg:flex">
           {NAV_LINKS.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="whitespace-nowrap text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               {link.label}
             </a>
@@ -65,7 +57,7 @@ export default function Nav() {
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <a
-            href="https://onboarding.assis.care/login"
+            href={LOGIN_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:block"
@@ -96,7 +88,7 @@ export default function Nav() {
             transition={{ duration: 0.2 }}
             className="overflow-hidden border-t border-border bg-white lg:hidden"
           >
-            <nav className="flex max-h-[min(70vh,28rem)] flex-col gap-1 overflow-y-auto px-5 py-3">
+            <nav className="flex max-h-[min(70vh,32rem)] flex-col gap-1 overflow-y-auto px-5 py-3">
               {NAV_LINKS.map((link) => (
                 <a
                   key={link.href}
@@ -108,7 +100,7 @@ export default function Nav() {
                 </a>
               ))}
               <a
-                href="https://onboarding.assis.care/login"
+                href={LOGIN_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMobileOpen(false)}

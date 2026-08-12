@@ -23,7 +23,7 @@ export default function FinalCTA() {
             Build trust. Protect margin. Grow sales.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/80 sm:text-base">
-            Start with Powered, Trusted, or Grow — and see results in the KPIs you already
+            Start with Powered, Trusted, or Grow - and see results in the KPIs you already
             manage: conversion, cancellations, returns, and repeat buyers.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

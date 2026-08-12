@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 208" fill="none" role="img" aria-label="Assis">
+  <!-- Assis heart with a chat-bubble tail (??????) on the bottom-left -->
+  <path
+    fill="#1d6fee"
+    d="
+      M100 37
+      C100 22 107 5 127 5
+      C159 5 186 26 186 62
+      C186 108 148 148 118 174
+      C112 179 110 185 112 192
+      C114 200 108 206 100 204
+      L42 176
+      C34 172 35 160 44 156
+      L68 144
+      C40 122 14 98 14 62
+      C14 26 41 5 73 5
+      C93 5 100 22 100 37
+      Z
+    "
+  />
+  <ellipse
+    cx="62"
+    cy="48"
+    rx="14"
+    ry="9"
+    fill="#ffffff"
+    transform="rotate(-28 62 48)"
+  />
+  <text
+    x="100"
+    y="105"
+    text-anchor="middle"
+    fill="#ffffff"
+    font-family="'Plus Jakarta Sans', system-ui, sans-serif"
+    font-size="28"
+    font-weight="800"
+    letter-spacing="-0.03em"
+  >Assis</text>
+</svg>

@@ -26,11 +26,11 @@ export default function HomePage() {
           <Results />
           {/* 3. Three ways to work with Assis (replaces generic How it Works) */}
           <Packages />
-          {/* 4. Without vs With — clear for SME owners */}
+          {/* 4. Without vs With - clear for SME owners */}
           <Comparison />
           {/* 5. Platforms constellation */}
           <Platforms />
-          {/* 6. Real scenarios — non-generic product moments */}
+          {/* 6. Real scenarios - non-generic product moments */}
           <Scenarios />
           {/* 7. Merchant photos + quotes */}
           <Testimonials />

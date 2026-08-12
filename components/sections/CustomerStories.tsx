@@ -1,81 +1,120 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ScrollReveal from "@/components/ScrollReveal";
 
-const STORIES = [
+type Story = {
+  id: string;
+  name: string;
+  category: string;
+  logo: string;
+  logoHeight: number;
+  image: string;
+  imageAlt: string;
+  imagePosition?: string;
+  headline: string;
+  body: string;
+  outcomes: { value: string; label: string; stars?: boolean }[];
+  points: string[];
+  footerLabel: string;
+  quotes: { name: string; text: string; role?: string }[];
+  googleHref?: string;
+};
+
+const STORIES: Story[] = [
+  {
+    id: "swift",
+    name: "Swift",
+    category: "Luxury fashion",
+    logo: "/brand/swift-logo.png",
+    logoHeight: 28,
+    image: "/base44/c390269ec_image.png",
+    imageAlt: "Swift luxury fashion customer experience",
+    imagePosition: "object-[center_28%]",
+    headline: "Returns from 6% to 2% in 3 months.",
+    body: "Assis ran the customer side for Swift at luxury speed. Patterns in those moments showed why products came back - so the experience improved before returns piled up.",
+    outcomes: [
+      { value: "6%→2%", label: "Return rate in 3 months" },
+      { value: "100%", label: "Customers covered" },
+    ],
+    points: [
+      "Customer side handled across every channel",
+      "Return drivers surfaced from real moments",
+      "Issues fixed before they became refunds",
+    ],
+    footerLabel: "Founder",
+    quotes: [
+      {
+        name: "Yovel Golan",
+        role: "Founder at Swift",
+        text: "In luxury, the experience is everything. Assis makes sure every customer feels known from the first click. That's how you build loyalty.",
+      },
+    ],
+  },
   {
     id: "sharp",
     name: "SHARP",
+    category: "Home appliances",
     logo: "/brand/sharp-logo.png",
     logoHeight: 22,
     image: "/brand/sharp-product.png",
     imageAlt: "SHARP air purifier in a living room",
-    headline: "43% of sales conversations converted.",
-    body: "Questions weren’t treated like tickets. They were managed as moments before a purchase. And when shoppers kept asking for a product SHARP didn’t sell, Assis connected the pattern.",
+    imagePosition: "object-center",
+    headline: "43% of pre-purchase moments converted.",
+    body: "Hesitation before checkout was treated as a revenue moment, not a ticket. When shoppers kept asking for a product SHARP didn’t sell, Assis connected the demand - and a new bestseller followed.",
     outcomes: [
-      { value: "43%", label: "Of sales conversations converted" },
-      { value: "New SKU", label: "From ask to bestseller" },
+      { value: "43%", label: "Of sales moments converted" },
+      { value: "New SKU", label: "From demand to bestseller" },
     ],
     points: [
-      "Sales chats handled as moments before purchase",
-      "Repeated questions surfaced a missing product",
-      "Assis connected the pattern. SHARP listed it. It sold.",
+      "Pre-purchase moments protected conversion",
+      "Repeated demand surfaced a missing product",
+      "Assis connected the signal. SHARP listed it. It sold.",
     ],
-    footerLabel: "Two outcomes from the chats",
+    footerLabel: "COO",
     quotes: [
       {
-        name: "Conversion",
-        text: "Questions weren’t treated like tickets. They were managed as moments before a purchase.",
-      },
-      {
-        name: "Product signal",
-        text: "Shoppers kept asking for a product SHARP didn’t sell. Assis connected the pattern across chats.",
-      },
-      {
-        name: "Bestseller",
-        text: "SHARP added it. What started as a repeated question became a bestseller.",
+        name: "Eden Bachman",
+        role: "COO at SHARP",
+        text: "Assis didn’t just answer questions - it showed us what customers were asking for before we even listed it. That signal became one of our bestsellers.",
       },
     ],
   },
   {
     id: "roomi",
     name: "Roomi",
+    category: "Sleep & mattresses",
     logo: "/brand/roomi-logo.png",
     logoHeight: 26,
     image: "/brand/roomi-store.png",
     imageAlt: "Roomi mattress in a bedroom showroom setting",
-    headline: "Double the sales. Same level of service.",
-    body: "Roomi doubled sales in 5 months without breaking service or operations. Reviews open with how they were treated, then the mattress, and repeat buys follow.",
+    imagePosition: "object-[center_40%]",
+    headline: "Double the sales. Same level of trust.",
+    body: "Roomi scaled revenue in 5 months without breaking the customer experience. Reviews still open with how people were treated - then the product - then the next order.",
     outcomes: [
       { value: "2×", label: "Sales in 5 months" },
       { value: "4.8", label: "Google rating", stars: true },
     ],
     points: [
-      "Scale sales without breaking service or ops",
-      "Reviews lead with service, then product",
-      "More repeats, more loyalty, higher LTV",
+      "Growth without breaking the customer side",
+      "Trust led reviews, then product, then repeats",
+      "Higher loyalty and lifetime value",
     ],
-    footerLabel: "Google reviews · 4.8",
+    footerLabel: "Founder",
     quotes: [
       {
-        name: "Shahar Komar",
-        text: "I just have to praise the customer service, which is rare at this level. This alone makes me want to purchase again.",
-      },
-      {
-        name: "Shira Tuvia",
-        text: "The best service there is: patient, kind, and attentive. It is important to them that the product fits and the customer is satisfied.",
-      },
-      {
-        name: "Omri Cheika",
-        text: "Excellent customer service. This is truly the most comfortable mattress I have ever slept on, and we also bought bedding recently.",
+        name: "Bar Cohen",
+        role: "Founder at Roomi",
+        text: "We doubled sales without breaking the experience. Assis kept every customer taken care of while we grew - and the reviews still lead with how people were treated.",
       },
     ],
     googleHref:
       "https://www.google.com/search?q=Roomi+%D7%A8%D7%95%D7%9E%D7%99+%D7%91%D7%99%D7%A7%D7%95%D7%A8%D7%95%D7%AA",
   },
-] as const;
+];
+
+const ROTATE_MS = 7000;
 
 function Stars() {
   return (
@@ -87,60 +126,67 @@ function Stars() {
 
 export default function CustomerStories() {
   const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
   const story = STORIES[active];
-  const hasGoogle = "googleHref" in story && Boolean(story.googleHref);
+  const hasGoogle = Boolean(story.googleHref);
+  const singleQuote = story.quotes.length === 1;
+
+  useEffect(() => {
+    if (paused) return;
+    const id = setInterval(() => {
+      setActive((i) => (i + 1) % STORIES.length);
+    }, ROTATE_MS);
+    return () => clearInterval(id);
+  }, [paused]);
 
   return (
     <section id="cases" className="scroll-mt-20 px-5 py-14 sm:px-10 sm:py-24">
       <div className="mx-auto max-w-5xl">
         <ScrollReveal>
           <p className="text-center text-[11px] font-medium uppercase tracking-[0.24em] text-zinc-400">
-            Store results
+            Proof
           </p>
           <h2 className="mt-4 font-display text-center text-[1.75rem] font-bold tracking-[-0.04em] text-foreground sm:text-5xl">
-            Proof from real stores.
+            When the customer side is managed,
+            <br className="hidden sm:block" />
+            the business grows.
           </h2>
-          <p className="mt-4 text-center text-[11px] text-zinc-400">
-            Tap a store to switch
-          </p>
         </ScrollReveal>
 
-        <div className="mt-8 flex items-center justify-center gap-3 sm:mt-10">
-          {STORIES.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setActive(i)}
-              className={`relative flex h-9 items-center rounded-full px-5 text-xs font-semibold transition-colors sm:h-8 sm:px-4 ${
-                i === active
-                  ? "bg-assis-blue text-white"
-                  : "bg-zinc-100 text-zinc-500 hover:bg-assis-blue/10 hover:text-assis-blue"
-              }`}
-            >
-              {s.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="relative mt-8 lg:h-[620px]">
+        <div
+          className="relative mt-10"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onFocusCapture={() => setPaused(true)}
+          onBlurCapture={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+              setPaused(false);
+            }
+          }}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={story.id}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-col overflow-hidden rounded-[1.5rem] border border-white/70 bg-white px-5 pb-6 pt-7 shadow-[0_24px_60px_-40px_rgba(29,111,238,0.28)] sm:rounded-[2rem] sm:px-10 sm:pb-8 sm:pt-10 lg:absolute lg:inset-0"
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col overflow-hidden rounded-[1.5rem] border border-white/70 bg-white px-5 pb-6 pt-7 shadow-[0_24px_60px_-40px_rgba(29,111,238,0.28)] sm:rounded-[2rem] sm:px-10 sm:pb-8 sm:pt-10"
             >
-              <div className="grid min-h-0 flex-1 items-start gap-5 lg:grid-cols-2 lg:gap-10">
-                <div className="order-2 min-h-0 lg:order-1">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`${story.logo}?v=3`}
-                    alt={story.name}
-                    className="mb-1 block w-auto object-contain object-left"
-                    style={{ height: story.logoHeight }}
-                  />
+              <div className="grid items-stretch gap-5 lg:grid-cols-2 lg:gap-10">
+                <div className="order-2 flex min-h-0 flex-col lg:order-1">
+                  <div className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={story.logo}
+                      alt={story.name}
+                      className="block w-auto object-contain object-left"
+                      style={{ height: story.logoHeight }}
+                    />
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                      {story.category}
+                    </span>
+                  </div>
                   <h3 className="mt-4 font-display text-xl font-bold tracking-[-0.03em] text-foreground sm:text-3xl">
                     {story.headline}
                   </h3>
@@ -155,7 +201,7 @@ export default function CustomerStories() {
                           <p className="font-display text-2xl font-bold tracking-[-0.04em] text-assis-blue sm:text-3xl">
                             {o.value}
                           </p>
-                          {"stars" in o && o.stars ? (
+                          {o.stars ? (
                             <span
                               className="text-base tracking-tight text-[#f4b400] sm:text-lg"
                               aria-label="4.8 stars"
@@ -181,12 +227,18 @@ export default function CustomerStories() {
                   </ul>
                 </div>
 
-                <div className="relative order-1 h-44 shrink-0 overflow-hidden rounded-2xl sm:h-56 lg:order-2 lg:h-[280px]">
+                <div className="relative order-1 aspect-[4/3] w-full overflow-hidden rounded-2xl bg-zinc-100 sm:aspect-[16/11] lg:order-2 lg:aspect-auto lg:h-full lg:min-h-[20rem]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={story.image}
                     alt={story.imageAlt}
-                    className="absolute inset-0 h-full w-full object-cover"
+                    className={`absolute inset-0 h-full w-full object-cover ${
+                      story.imagePosition ?? "object-center"
+                    }`}
+                  />
+                  <div
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-black/5"
+                    aria-hidden
                   />
                 </div>
               </div>
@@ -196,7 +248,7 @@ export default function CustomerStories() {
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
                     {story.footerLabel}
                   </p>
-                  {hasGoogle ? (
+                  {hasGoogle && story.googleHref ? (
                     <a
                       href={story.googleHref}
                       target="_blank"
@@ -207,27 +259,73 @@ export default function CustomerStories() {
                     </a>
                   ) : null}
                 </div>
-                <div className="grid gap-4 sm:gap-5 md:grid-cols-3 md:gap-6">
-                  {story.quotes.map((q) => (
-                    <blockquote
-                      key={q.text.slice(0, 32)}
-                      className="text-[12px] leading-relaxed text-zinc-500 sm:text-[13px]"
-                    >
-                      {hasGoogle ? <Stars /> : null}
-                      <p className={`line-clamp-4${hasGoogle ? " mt-1" : ""}`}>
-                        &ldquo;{q.text}&rdquo;
-                      </p>
-                      {q.name ? (
-                        <footer className="mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
-                          {q.name}
-                        </footer>
+                {singleQuote ? (
+                  <blockquote className="max-w-3xl">
+                    <p className="font-display text-lg font-medium leading-snug tracking-[-0.02em] text-foreground sm:text-xl">
+                      &ldquo;{story.quotes[0].text}&rdquo;
+                    </p>
+                    <footer className="mt-3 text-sm text-zinc-500">
+                      <span className="font-semibold text-foreground">
+                        {story.quotes[0].name}
+                      </span>
+                      {story.quotes[0].role ? (
+                        <>
+                          <span className="text-zinc-300"> · </span>
+                          {story.quotes[0].role}
+                        </>
                       ) : null}
-                    </blockquote>
-                  ))}
-                </div>
+                    </footer>
+                  </blockquote>
+                ) : (
+                  <div className="grid gap-4 sm:gap-5 md:grid-cols-3 md:gap-6">
+                    {story.quotes.map((q) => (
+                      <blockquote
+                        key={q.text.slice(0, 32)}
+                        className="text-[12px] leading-relaxed text-zinc-500 sm:text-[13px]"
+                      >
+                        {hasGoogle ? <Stars /> : null}
+                        <p className={`${hasGoogle ? "mt-1 " : ""}line-clamp-4`}>
+                          &ldquo;{q.text}&rdquo;
+                        </p>
+                        {q.name ? (
+                          <footer className="mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+                            {q.name}
+                          </footer>
+                        ) : null}
+                      </blockquote>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           </AnimatePresence>
+        </div>
+
+        <div
+          className="mt-6 flex items-center justify-center gap-1.5"
+          role="tablist"
+          aria-label="Customer stories"
+        >
+          {STORIES.map((s, i) => (
+            <button
+              key={s.id}
+              type="button"
+              role="tab"
+              aria-selected={i === active}
+              aria-label={`Show ${s.name} story`}
+              title={s.name}
+              onClick={() => setActive(i)}
+              className="group flex h-10 cursor-pointer items-center justify-center px-1.5 focus-visible:outline-none"
+            >
+              <span
+                className={`block rounded-full transition-all duration-300 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-assis-blue/40 group-focus-visible:ring-offset-2 ${
+                  i === active
+                    ? "h-2.5 w-9 bg-assis-blue"
+                    : "h-2.5 w-2.5 bg-zinc-300 group-hover:bg-assis-blue/55 group-hover:w-5"
+                }`}
+              />
+            </button>
+          ))}
         </div>
       </div>
     </section>

@@ -22,7 +22,7 @@ const MOMENTS = [
     tag: "Moment 2",
     phase: "First Payment → Churn",
     title: "The first-month drop.",
-    desc: "They paid. They believed in you enough to enter a credit card. Then something happened — and they didn't renew. This is the most expensive churn there is.",
+    desc: "They paid. They believed in you enough to enter a credit card. Then something happened - and they didn't renew. This is the most expensive churn there is.",
     problem: "What you see: first-month churn rate.",
     what_you_miss: "What you miss: exactly when and why it broke.",
     items: [
@@ -56,7 +56,7 @@ export default function CustomerJourney() {
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
             Every SaaS company has the same two holes in the bucket. Most just
-            don&rsquo;t know what falls through them — or why.
+            don&rsquo;t know what falls through them - or why.
           </p>
         </motion.div>
 

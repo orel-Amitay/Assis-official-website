@@ -1,7 +1,7 @@
 // Aspect ratio matches the real ASSIS heart asset (public/brand/assis-heart.png, 1024x967).
 export const HEART_VIEWBOX = "0 0 200 189";
 
-// Rough silhouette of the real mark — used only as an invisible clip region
+// Rough silhouette of the real mark - used only as an invisible clip region
 // for ambient internal motion (e.g. flowing dots), never rendered directly.
 export const HEART_PATH =
   "M100,182 C100,182 14,114 14,62 C14,26 41,5 73,5 C93,5 100,22 100,37 C100,22 107,5 127,5 C159,5 186,26 186,62 C186,114 100,182 100,182 Z";

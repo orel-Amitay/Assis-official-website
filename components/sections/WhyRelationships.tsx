@@ -11,17 +11,17 @@ const BLIND_SPOTS = [
   {
     icon: "🔄",
     title: "You're fixing the wrong things.",
-    desc: "Without real feedback from the customers who left, product decisions are based on the customers who stayed — a fundamentally biased sample.",
+    desc: "Without real feedback from the customers who left, product decisions are based on the customers who stayed - a fundamentally biased sample.",
   },
   {
     icon: "🔇",
     title: "Silent exits are the most expensive.",
-    desc: "A customer who complains is a customer you can help. A customer who disappears is a customer you've lost twice — once to churn, once to the insight you never got.",
+    desc: "A customer who complains is a customer you can help. A customer who disappears is a customer you've lost twice - once to churn, once to the insight you never got.",
   },
   {
     icon: "🎯",
     title: "One conversation can save dozens of future customers.",
-    desc: "When you understand why user #47 left, you can prevent users #48–#500 from leaving for the same reason. That's the compounding value of every conversation Assis has.",
+    desc: "When you understand why user #47 left, you can prevent users #48-#500 from leaving for the same reason. That's the compounding value of every conversation Assis has.",
   },
 ];
 

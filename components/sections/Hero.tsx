@@ -154,7 +154,7 @@ export default function Hero() {
   return (
     <section
       id="top"
-      className="relative flex min-h-[min(78svh,720px)] flex-col justify-center overflow-hidden px-5 pb-10 pt-24 sm:min-h-[78svh] sm:px-10 sm:pb-12 sm:pt-32"
+      className="relative overflow-hidden px-5 pb-6 pt-24 sm:px-10 sm:pb-8 sm:pt-28"
     >
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         {SCATTER.map((item) => (
@@ -163,18 +163,20 @@ export default function Hero() {
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-4xl text-center">
-        <h1 className="font-display text-[2.15rem] font-bold leading-[1.06] tracking-[-0.05em] text-foreground min-[400px]:text-[2.5rem] sm:text-6xl lg:text-[4.75rem]">
-          You run the store.
+        <h1 className="font-display text-[2.15rem] font-bold leading-[1.06] tracking-[-0.05em] text-foreground min-[400px]:text-[2.5rem] sm:text-6xl lg:text-[4.25rem]">
+          More revenue starts with
           <br />
-          <span className="text-assis-blue">Assis runs the relationship.</span>
+          <span className="whitespace-nowrap text-assis-blue">
+            better customer relationships.
+          </span>
         </h1>
 
-        <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-zinc-500 sm:mt-7 sm:text-lg">
-          AI between your store and your shoppers. Run it with your team, or let Assis Care run it
-          for you.
+        <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-relaxed text-zinc-500 sm:mt-7 sm:text-lg">
+          Assis manages the customer side of your business, so every interaction builds trust,
+          protects revenue, and helps your business grow.
         </p>
 
-        <div className="mt-8 flex w-full flex-col items-stretch justify-center gap-3 sm:mt-12 sm:w-auto sm:flex-row sm:items-center">
+        <div className="mt-8 flex w-full flex-col items-stretch justify-center gap-3 sm:mt-10 sm:w-auto sm:flex-row sm:items-center">
           <BookDemoButton className="inline-flex h-12 items-center justify-center rounded-full bg-assis-blue px-8 text-sm font-semibold text-white transition-colors hover:bg-assis-blue-deep">
             Book a demo
           </BookDemoButton>
@@ -186,9 +188,9 @@ export default function Hero() {
           </a>
         </div>
 
-        <div className="mx-auto mt-12 flex w-full max-w-[17rem] items-center justify-center gap-2.5 min-[400px]:max-w-xs sm:mt-16 sm:gap-4">
+        <div className="mx-auto mt-10 flex w-full max-w-[17rem] items-center justify-center gap-2.5 min-[400px]:max-w-xs sm:mt-12 sm:gap-4">
           <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-zinc-400 min-[400px]:text-[10px] min-[400px]:tracking-[0.2em]">
-            Your store
+            Your business
           </span>
           <div className="h-px flex-1 bg-zinc-200/80" />
           <Image
@@ -202,7 +204,7 @@ export default function Hero() {
           />
           <div className="h-px flex-1 bg-zinc-200/80" />
           <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-zinc-400 min-[400px]:text-[10px] min-[400px]:tracking-[0.2em]">
-            Your shoppers
+            Your customers
           </span>
         </div>
       </div>

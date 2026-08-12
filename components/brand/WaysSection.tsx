@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import ScrollReveal from "@/components/ScrollReveal";
 import { BookDemoButton } from "@/components/DemoModal";
 
@@ -14,31 +15,31 @@ const CHANNELS = [
 const WAYS = [
   {
     id: "powered",
-    verb: "We automate.",
+    verb: "You stay in control.",
     name: "Powered by Assis",
-    headline: "AI that never leaves a customer waiting.",
-    body: "Perfect for brands that want to automate customer conversations while keeping their own support team.",
+    headline: "Assis runs customer interactions. Your team owns the relationship.",
+    body: "For brands that want the customer side handled - without giving up operational ownership.",
     points: [
-      "AI across every channel",
-      "Instant answers",
-      "Human handoff",
-      "Self managed",
-      "Live in days",
+      "Customer interactions across channels",
+      "Answers before hesitation becomes abandonment",
+      "Human handoff when judgment matters",
+      "Your team stays in charge",
+      "Live in minutes on Shopify",
     ],
     visual: "powered" as const,
     featured: false,
   },
   {
     id: "trusted",
-    verb: "We operate.",
+    verb: "We take ownership.",
     name: "Trusted by Assis",
-    headline: "We become your customer care team.",
-    body: "For brands that want to stop managing support and start focusing on growth.",
+    headline: "Assis becomes the team managing your customer relationships.",
+    body: "For brands that want the customer side fully operated - so leadership can focus on growth.",
     points: [
       "Everything in Powered",
-      "Human support specialists",
-      "Daily operations",
-      "SLA management",
+      "Assis specialists on the customer side",
+      "Day-to-day customer operations",
+      "SLA ownership",
       "Fully managed",
     ],
     featured: true,
@@ -46,16 +47,16 @@ const WAYS = [
   },
   {
     id: "grow",
-    verb: "We optimize.",
+    verb: "We turn it into decisions.",
     name: "Grow by Assis",
-    headline: "Turn conversations into revenue.",
-    body: "Every customer interaction becomes insight. Every insight becomes action.",
+    headline: "Assis turns the customer side into better business decisions.",
+    body: "For brands that want every touchpoint to improve conversion, product, and operations - not just close a queue.",
     points: [
-      "Business insights",
+      "Signals from the customer side",
       "Conversion opportunities",
-      "Product feedback",
+      "Product demand patterns",
       "Customer trends",
-      "Executive reports",
+      "Executive reporting",
     ],
     visual: "grow" as const,
     featured: false,
@@ -82,12 +83,12 @@ function PoweredVisual() {
           Do you ship to NYC same day?
         </div>
         <div className="max-w-[90%] rounded-2xl rounded-bl-md bg-assis-blue px-3 py-2 text-[11px] leading-snug text-white">
-          Yes — same-day shipping until 2pm. Want me to check stock for your size?
+          Yes - same-day shipping until 2pm. Want me to check stock for your size?
         </div>
         <div className="flex items-center gap-1.5 pt-1">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
           <span className="text-[10px] font-medium text-zinc-400">
-            Instant · across every channel
+            Answered · before the cart leaves
           </span>
         </div>
       </div>
@@ -102,7 +103,7 @@ function TrustedVisual() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/brand/roomi-store.png"
-          alt="Assis-managed customer care"
+          alt="Assis-managed customer relationships"
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220]/70 to-transparent" />
@@ -110,7 +111,7 @@ function TrustedVisual() {
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">
             Fully managed
           </p>
-          <p className="text-sm font-semibold text-white">Your care team, on Assis</p>
+          <p className="text-sm font-semibold text-white">Your customer side, on Assis</p>
         </div>
       </div>
       <div className="grid grid-cols-3 gap-px bg-border/60">
@@ -141,7 +142,7 @@ function GrowVisual() {
           alt="SHARP"
           className="h-4 w-auto object-contain opacity-80"
         />
-        <span className="text-[10px] font-medium text-zinc-400">Product signal</span>
+        <span className="text-[10px] font-medium text-zinc-400">Demand signal</span>
       </div>
       <div className="space-y-2">
         {["Do you sell this?", "Can I order this from you?", "Why don't you carry it?"].map(
@@ -172,19 +173,19 @@ function WayVisual({ type }: { type: "powered" | "trusted" | "grow" }) {
 
 export default function WaysSection() {
   return (
-    <section id="ways" className="px-5 py-20 sm:px-10 sm:py-28">
+    <section id="ways" className="scroll-mt-20 px-5 py-20 sm:px-10 sm:py-28">
       <div className="mx-auto max-w-6xl">
         <ScrollReveal className="mx-auto max-w-2xl text-center">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-assis-blue">
             Powered. Trusted. Grow.
           </p>
           <h2 className="font-display mt-4 text-3xl font-bold tracking-[-0.04em] text-foreground sm:text-5xl">
-            Choose how you want to work with Assis.
+            Three levels of ownership.
+            <br />
+            One operating layer.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Not every brand needs the same level of support.
-            <br />
-            Start where you are today. Grow whenever you&apos;re ready.
+            Same product. Different depth of responsibility for the customer side of your business.
           </p>
         </ScrollReveal>
 
@@ -226,9 +227,18 @@ export default function WaysSection() {
                     </li>
                   ))}
                 </ul>
-                <BookDemoButton className="mt-6 inline-flex text-left text-sm font-semibold text-assis-blue transition hover:text-assis-blue-deep">
-                  Learn more →
-                </BookDemoButton>
+                {way.id === "powered" ? (
+                  <Link
+                    href="/PoweredByAssis"
+                    className="mt-6 inline-flex text-left text-sm font-semibold text-assis-blue transition hover:text-assis-blue-deep"
+                  >
+                    What’s included →
+                  </Link>
+                ) : (
+                  <BookDemoButton className="mt-6 inline-flex text-left text-sm font-semibold text-assis-blue transition hover:text-assis-blue-deep">
+                    Talk to us →
+                  </BookDemoButton>
+                )}
               </article>
             </ScrollReveal>
           ))}

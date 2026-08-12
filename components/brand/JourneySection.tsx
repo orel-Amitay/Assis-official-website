@@ -25,7 +25,7 @@ const MOMENTS: {
   {
     stage: "After purchase",
     title: "Protect trust after every order.",
-    body: "Refunds turn into exchanges. Issues get solved. The shopper stays — and so does the revenue.",
+    body: "Refunds turn into exchanges. Issues get solved. The shopper stays - and so does the revenue.",
     metric: "93%",
     metricLabel: "Of at-risk revenue kept",
     icon: Truck,

@@ -83,7 +83,7 @@ export default function HowItWorks() {
               transition={{ duration: REVEAL_DURATION, delay: 0.1, ease: REVEAL_EASE }}
               className="grid items-start gap-12 lg:grid-cols-2 lg:gap-20"
             >
-              {/* Steps — left */}
+              {/* Steps - left */}
               <div className="relative">
                 <div
                   className="absolute bottom-4 left-[1.15rem] top-4 w-px overflow-hidden bg-zinc-200"
@@ -146,7 +146,7 @@ export default function HowItWorks() {
                 </div>
               </div>
 
-              {/* Outcomes — right, paired with steps */}
+              {/* Outcomes - right, paired with steps */}
               <div className="relative lg:pt-2">
                 <p className="mb-6 text-xs font-bold uppercase tracking-widest text-zinc-400">
                   Every conversation leads to

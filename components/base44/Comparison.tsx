@@ -10,7 +10,7 @@ export default function Comparison() {
             Without Assis vs. With Assis
           </h2>
           <p className="mt-3 text-base text-[hsl(var(--on-surface-variant))]">
-            The difference shows up fast — in tickets, cancellations, and repeat purchases.
+            The difference shows up fast - in tickets, cancellations, and repeat purchases.
           </p>
         </div>
 

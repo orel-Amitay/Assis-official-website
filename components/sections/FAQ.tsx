@@ -7,35 +7,35 @@ import { AnimatePresence, motion } from "framer-motion";
 const FAQS = [
   {
     q: "What does Assis actually do for my store?",
-    a: "Assis sits between your store and your shoppers: sales questions before checkout, order issues and WISMO after purchase, and refunds turned into exchanges or store credit. AI is always in the stack. With Powered, your team runs it. With Care, our team runs it for you. Growth adds reports and monthly business reviews on top of Care.",
+    a: "Assis manages the customer side of your e-commerce business. Before checkout, that means turning hesitation into purchases. After the order, that means protecting trust and keeping revenue in the store. Across the shopping journey, Assis surfaces what customers need - so operations improve with the experience.",
   },
   {
-    q: "What’s the difference between Powered, Care, and Growth?",
-    a: "Powered is AI + inbox for your team. Care is the same system with Assis operating the conversations. Growth is Care plus a business layer: reports from live chats, product and ops signals, and a monthly strategy meeting. Most stores start on Care.",
+    q: "What’s the difference between Powered, Trusted, and Grow?",
+    a: "They are three levels of ownership of the same operating layer. Powered: Assis runs customer interactions while your team stays in control. Trusted: Assis becomes the operational team managing your customer relationships. Grow: Assis turns what happens on the customer side into better business decisions. Most brands start on Trusted.",
   },
   {
     q: "Is this a chatbot?",
-    a: "No. Assis is a customer relationship operation, not another ticket tool. AI handles volume so shoppers get answers fast. When a real person is needed, your team — or ours on Care — steps in. The goal is fewer lost sales and fewer refunds walking out the door.",
+    a: "No. Chatbots answer questions. Helpdesks organize tickets. Assis manages the relationship between your business and your customers - measured in conversion, revenue protected, trust, and better decisions.",
   },
   {
     q: "How is this different from Gorgias / Zendesk / Intercom?",
-    a: "Helpdesk tools organize tickets. Assis owns the outcome: convert the chat, protect revenue, keep trust. We measure success in conversion, refunds saved, and Google ratings, not only response time.",
+    a: "Those tools organize support work. Assis is the operating layer for the customer side of the business. Success is conversion, refunds prevented, and customers who come back - not only response time.",
   },
   {
     q: "Does Assis work if I’m not on Shopify?",
-    a: "Shopify is live today. Install from the App Store. Other platforms (Woo, Wix, and more) work through a demo so we connect the right stack for your store.",
+    a: "Shopify is live today. Install from the App Store. Other platforms work through a demo so we connect the right stack for your brand.",
   },
   {
-    q: "What channels does Assis cover?",
-    a: "WhatsApp, Instagram, Messenger, email, SMS/iMessage, and your site chat. Shoppers meet Assis where they already message you.",
+    q: "Where do customers reach Assis?",
+    a: "Wherever they already message you: WhatsApp, Instagram, Messenger, email, SMS/iMessage, and site chat. One customer side. Every channel.",
   },
   {
     q: "How fast can we go live?",
-    a: "On Shopify, Powered can be live in minutes: install the app, connect channels, and conversations start flowing. Care and Growth we set up with you on the demo so the handoff feels right for your store.",
+    a: "On Shopify, Powered can be live in minutes. Trusted and Grow are set up with you on the demo so ownership of the customer side matches how your brand operates.",
   },
   {
     q: "How do you price?",
-    a: "It depends on the plan. Powered is a simple monthly plan. Care is priced by conversation volume. Growth is custom on top of Care. No lock-in — we’ll map the right fit on the demo.",
+    a: "Powered is a simple monthly plan. Trusted is priced by interaction volume. Grow is custom on top of Trusted. No lock-in - we’ll map the right fit on the demo.",
   },
 ];
 
@@ -50,7 +50,7 @@ export default function FAQ() {
             FAQ
           </p>
           <h2 className="mt-4 font-display text-[1.75rem] font-bold tracking-[-0.04em] text-foreground sm:text-5xl">
-            Questions store owners ask.
+            Questions operators ask.
           </h2>
         </ScrollReveal>
 

@@ -92,7 +92,7 @@ function PoweredVisual() {
           Do you ship to NYC same day?
         </div>
         <div className="max-w-[90%] rounded-2xl rounded-bl-md bg-assis-blue px-3 py-2 text-[11px] leading-snug text-white">
-          Yes — same-day shipping until 2pm. Want me to check stock for your size?
+          Yes - same-day shipping until 2pm. Want me to check stock for your size?
         </div>
         <div className="flex items-center gap-1.5 pt-1">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />

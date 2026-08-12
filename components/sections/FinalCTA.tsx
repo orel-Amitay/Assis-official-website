@@ -91,12 +91,12 @@ export default function FinalCTA() {
 
           <div className="relative flex flex-col items-center">
             <h2 className="font-display text-[1.75rem] font-bold leading-[1.1] tracking-[-0.04em] text-white sm:text-4xl lg:text-[2.75rem]">
-              Own every moment
+              Put Assis on the customer side
               <br />
-              with your shoppers.
+              of your business.
             </h2>
             <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-white/80 sm:text-base">
-              Build trust. Protect margin. Grow sales.
+              More revenue. Fewer refunds. Customers who come back.
             </p>
 
             <div className="mt-8 flex w-full max-w-sm flex-col items-stretch justify-center gap-3 sm:mt-9 sm:max-w-none sm:w-auto sm:flex-row sm:items-center">

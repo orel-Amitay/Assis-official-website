@@ -23,7 +23,7 @@ const DATA: Record<Tab, { title: string; desc: string; examples: string[] }> = {
   },
   saas: {
     title: "Turn churn signals into expansion opportunities.",
-    desc: "For SaaS companies, the most expensive customer is the one who leaves quietly. Assis identifies the moments of friction — trial expiry, downgrade intent, cancellation — and turns them into relationship conversations that recover and expand revenue.",
+    desc: "For SaaS companies, the most expensive customer is the one who leaves quietly. Assis identifies the moments of friction - trial expiry, downgrade intent, cancellation - and turns them into relationship conversations that recover and expand revenue.",
     examples: [
       "Trial expiration",
       "Subscription cancellation",

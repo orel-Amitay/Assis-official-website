@@ -6,27 +6,27 @@ const DIFFS = [
   {
     icon: "🎯",
     title: "Outcome-based, not feature-based",
-    desc: "We don't sell software. We deliver results. Every engagement is tied to a measurable business outcome — retention, recovery, or revenue growth.",
+    desc: "We don't sell software. We deliver results. Every engagement is tied to a measurable business outcome - retention, recovery, or revenue growth.",
   },
   {
     icon: "🔗",
     title: "The entire customer journey",
-    desc: "Most tools cover one moment. Assis covers every moment — from first contact to cancellation intent — with a single, coherent platform.",
+    desc: "Most tools cover one moment. Assis covers every moment - from first contact to cancellation intent - with a single, coherent platform.",
   },
   {
     icon: "💡",
     title: "Relationships, not resolutions",
-    desc: "We measure success in trust, retention, and lifetime value — not tickets closed or response times. Because relationships outlast any single transaction.",
+    desc: "We measure success in trust, retention, and lifetime value - not tickets closed or response times. Because relationships outlast any single transaction.",
   },
   {
     icon: "⚡",
     title: "Built for scale, designed for humans",
-    desc: "Assis operates at the scale your team can't — across thousands of conversations simultaneously — while keeping every interaction feeling personal.",
+    desc: "Assis operates at the scale your team can't - across thousands of conversations simultaneously - while keeping every interaction feeling personal.",
   },
   {
     icon: "🏭",
     title: "Industry-specific intelligence",
-    desc: "Ecommerce and SaaS have different relationship dynamics. Assis is purpose-built for both — not a generic solution applied to your industry.",
+    desc: "Ecommerce and SaaS have different relationship dynamics. Assis is purpose-built for both - not a generic solution applied to your industry.",
   },
   {
     icon: "📊",
@@ -53,7 +53,7 @@ export default function Differentiators() {
             Built differently. Because the problem is different.
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-white/50">
-            We didn&rsquo;t build another support tool. We built a relationship platform — because
+            We didn&rsquo;t build another support tool. We built a relationship platform - because
             the companies that win long-term treat every customer conversation as a
             relationship investment.
           </p>

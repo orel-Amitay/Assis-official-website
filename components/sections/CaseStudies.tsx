@@ -4,24 +4,24 @@ import { motion } from "framer-motion";
 
 const CASES = [
   {
-    industry: "SaaS — Productivity tool",
+    industry: "SaaS - Productivity tool",
     stat: "2.4×",
     statLabel: "Free trial conversion rate",
-    desc: "A productivity SaaS was losing 76% of trial users without knowing why. Assis started conversations 3 days before trial end — and more than doubled conversions within 60 days.",
+    desc: "A productivity SaaS was losing 76% of trial users without knowing why. Assis started conversations 3 days before trial end - and more than doubled conversions within 60 days.",
     company: "B2B SaaS · 340 active accounts · $1.2M ARR",
   },
   {
-    industry: "SaaS — HR platform",
+    industry: "SaaS - HR platform",
     stat: "71%",
     statLabel: "Of month-1 cancellations recovered",
-    desc: "First-month churn was their biggest problem. Assis caught customers at the exact moment they were considering leaving — 71% stayed or moved to a higher plan.",
+    desc: "First-month churn was their biggest problem. Assis caught customers at the exact moment they were considering leaving - 71% stayed or moved to a higher plan.",
     company: "SMB SaaS · 1,100 subscribers",
   },
   {
-    industry: "SaaS — Analytics platform",
+    industry: "SaaS - Analytics platform",
     stat: "34%",
     statLabel: "Churn reduction in 6 months",
-    desc: "Assis conversations surfaced 47 distinct product issues. The team fixed the top 6. Churn dropped by a third — not from better sales, but from finally understanding why customers left.",
+    desc: "Assis conversations surfaced 47 distinct product issues. The team fixed the top 6. Churn dropped by a third - not from better sales, but from finally understanding why customers left.",
     company: "Developer tooling · 600 paying customers",
   },
 ];

@@ -30,9 +30,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Assis | Change the position. Change everything.",
+  title: "Assis | The customer side of your e-commerce business",
   description:
-    "Your store is managed. Your customer relationship isn't. Assis takes responsibility for the relationship between your brand and your customers.",
+    "Assis manages the relationship between your e-commerce business and your customers - the operating layer that grows revenue, trust, and better decisions.",
   icons: {
     icon: "/brand/assis-heart-whatsapp.png",
     apple: "/brand/assis-heart-whatsapp.png",
@@ -46,6 +46,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${manrope.variable} ${jakarta.variable} ${crimson.variable}`}>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="bg-white text-foreground antialiased" suppressHydrationWarning>
         <ScrollRoot>{children}</ScrollRoot>
       </body>

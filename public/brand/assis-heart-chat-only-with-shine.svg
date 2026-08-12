@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" fill="none" role="img" aria-label="Assis heart">
+  <!-- Assis heart only + gloss shine. No wordmark. -->
+  <path
+    fill="#1d6fee"
+    d="
+      M100 42
+      C100 24 108 4 130 4
+      C164 4 190 28 190 66
+      C190 118 142 158 114 184
+      C108 189 104 194 104 200
+      C104 206 100 214 92 214
+      C84 214 78 206 82 198
+      L96 178
+      C52 144 10 108 10 66
+      C10 28 38 4 70 4
+      C92 4 100 24 100 42
+      Z
+    "
+  />
+  <ellipse
+    cx="62"
+    cy="50"
+    rx="14"
+    ry="9"
+    fill="#ffffff"
+    transform="rotate(-28 62 50)"
+  />
+</svg>

@@ -66,7 +66,7 @@ export const SHOPPER_REVIEWS = [
     initials: "SM",
   },
   {
-    text: "I got an answer in seconds—truly amazing service. Usually these things take days of back and forth.",
+    text: "I got an answer in seconds-truly amazing service. Usually these things take days of back and forth.",
     name: "John D.",
     initials: "JD",
   },
@@ -106,7 +106,7 @@ export const HOW_STEPS = [
   {
     step: "02 Assis handles it",
     title: "The AI+Human Loop.",
-    desc: "Questions, delays, returns, issues — handled automatically. 24/7. Even at 3am while you sleep.",
+    desc: "Questions, delays, returns, issues - handled automatically. 24/7. Even at 3am while you sleep.",
   },
   {
     step: "03 You grow",
@@ -188,7 +188,7 @@ export const RESULT_HIGHLIGHTS = [
 export const RESULT_METRICS = [
   {
     value: "86%",
-    label: "Revenue at risk — saved.",
+    label: "Revenue at risk - saved.",
     desc: "Sales that would have been lost without immediate intervention.",
     highlight: false,
   },
@@ -260,7 +260,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Is this a chatbot?",
-    a: "No. Chatbots answer questions. Assis protects revenue. A shopper hesitates — Assis steps in. Delivery delayed — Assis tells them before they ask. Something breaks — Assis fixes it before it becomes a bad review.",
+    a: "No. Chatbots answer questions. Assis protects revenue. A shopper hesitates - Assis steps in. Delivery delayed - Assis tells them before they ask. Something breaks - Assis fixes it before it becomes a bad review.",
   },
   {
     q: "Who responds to customers?",
@@ -268,7 +268,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "How fast can I get started?",
-    a: "Shopify stores can connect in minutes. Live answers can start within days — not weeks of onboarding. Other platforms via demo.",
+    a: "Shopify stores can connect in minutes. Live answers can start within days - not weeks of onboarding. Other platforms via demo.",
   },
   {
     q: "What results can I expect?",

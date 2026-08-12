@@ -1,226 +1,427 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import AssisLogo from "@/components/AssisLogo";
+import {
+  Bullet,
+  ContactCard,
+  DocLink,
+  H2,
+  H3,
+  LegalPage,
+  List,
+  Mail,
+  Term,
+  legalMetadata,
+} from "@/components/legal/LegalPage";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy | Assis",
-  description:
-    "Privacy Policy for Assis Online Inc. Learn how we collect, use, and protect personal information processed through the Assis platform.",
-};
+export const metadata: Metadata = legalMetadata("PrivacyPolicy");
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-full bg-[#f7f8fa]">
-      <header className="border-b border-border bg-white/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-5 sm:px-8">
-          <Link href="/" className="inline-flex items-center transition-opacity hover:opacity-80">
-            <AssisLogo height={20} />
-          </Link>
-          <Link
-            href="/"
-            className="text-sm font-semibold text-assis-blue transition hover:text-assis-blue-deep"
-          >
-            Back to site
-          </Link>
-        </div>
-      </header>
+    <LegalPage slug="PrivacyPolicy">
+      <p>
+        Assis Online Inc. (&quot;Assis,&quot; &quot;Company,&quot; &quot;we,&quot; &quot;our,&quot; or
+        &quot;us&quot;), 28 Geary St STE 650, 585, San Francisco, CA 94108, provides
+        customer-support and messaging software and related services.
+      </p>
+      <p>
+        This Privacy Policy explains how we collect, use, share, retain, and protect personal
+        information in connection with the Assis platform, website (https://assis.care), apps,
+        plugins, integrations, and related services (together, the &quot;Services&quot;).
+      </p>
+      <p>
+        Related documents may also apply: <DocLink slug="CookiePolicy" />;{" "}
+        <DocLink slug="WebsiteTerms" />; <DocLink slug="BusinessTerms" /> and{" "}
+        <DocLink slug="DataProcessingAgreement" /> (for businesses);{" "}
+        <DocLink slug="EndUserTerms" /> (for customers interacting with a business through Assis).
+      </p>
 
-      <main className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-20">
-        <h1 className="font-display text-4xl font-bold tracking-[-0.04em] text-foreground sm:text-5xl">
-          Privacy Policy
-        </h1>
-        <p className="mt-3 text-sm text-muted-foreground">Last Updated: January 2026</p>
-        <div className="mt-10 space-y-10 text-[15px] leading-relaxed text-zinc-600 sm:text-base">
-          <p>{'Assis Online Inc. ("Assis," "Company," "we," "our," or "us") respects your privacy and is committed to protecting personal information processed through the Assis platform and related services.'}</p>
-          <p>{'This Privacy Policy explains what information we collect and process, how we use it, with whom it may be shared, how we protect it, and the rights that may be available to you regarding your personal information.'}</p>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'1. Scope of This Privacy Policy'}</h2>
-            <p>{'This Privacy Policy applies to information processed through the Assis platform and related services, including our website, applications, integrations, communication channels, artificial intelligence ("AI") systems, and automated systems.'}</p>
-            <p>{'This Policy applies both to information relating to businesses using Assis and their authorized users, and to information relating to customers and end users whose interactions are received, transmitted, displayed, managed, stored, or handled through the platform.'}</p>
-            <p>{'Depending on the plan, services, and settings selected by the business, customer interactions may be handled by the business or its representatives, by Assis representatives, through Assis AI and automated systems, or through a combination of these.'}</p>
-            <p>{'This Policy applies to information processed through the platform regardless of who ultimately handles a particular customer interaction.'}</p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'2. The Assis Platform and Customer Interaction Management'}</h2>
-            <p>{'Assis provides a platform that enables businesses to centrally manage customer interactions and inquiries.'}</p>
-            <p>{'Customer interactions received through communication channels connected to Assis may appear and be stored within the platform together with related information.'}</p>
-            <p>{'Through the platform, businesses may, among other things:'}</p>
-            <ul className="list-disc space-y-2 pl-5">
-              <li>{'Receive and centralize customer inquiries from communication channels connected to Assis.'}</li>
-              <li>{'View and manage messages and interaction history.'}</li>
-              <li>{'View relevant information regarding customers, orders, products, and shipments.'}</li>
-              <li>{'Allow the business and its authorized representatives to handle customer inquiries.'}</li>
-              <li>{'Allow Assis representatives to handle customer inquiries when such service is included in the plan selected by the business.'}</li>
-              <li>{'Use Assis AI and automated systems as part of the customer interaction process.'}</li>
-              <li>{'Manage tasks, questions, statuses, and records related to customer care.'}</li>
-              <li>{'The fact that an interaction appears or is stored within the Assis platform does not necessarily mean that it was handled by an Assis representative.'}</li>
-            </ul>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'3. Information We Collect and Process'}</h2>
-            <p>{'Depending on how the platform and services are used, we may collect and process the following categories of information:'}</p>
-            <p>{'Business and Authorized User Information:'}</p>
-            <p>{'Customer and End User Information:'}</p>
-            <p>{'Customer Interactions and Communications:'}</p>
-            <p>{'Order and Transaction Information:'}</p>
-            <p>{'Product and Service Information:'}</p>
-            <p>{'Technical and Usage Information:'}</p>
-            <p>{'Information from Integrations:'}</p>
-            <p>{'Information may be obtained directly from a business or customer, automatically through use of the service, or from systems and integrations connected to Assis by the business.'}</p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'4. How We Use Information'}</h2>
-            <p>{'We may use information to:'}</p>
-            <ul className="list-disc space-y-2 pl-5">
-              <li>{'Operate the Assis platform and provide our services.'}</li>
-              <li>{'Receive, process, display, store, and manage customer inquiries and interactions.'}</li>
-              <li>{'Maintain customer interaction and service history.'}</li>
-              <li>{'Enable businesses and their representatives to provide customer care through the platform.'}</li>
-              <li>{'Provide customer care through Assis representatives when included in the plan selected by the business.'}</li>
-              <li>{'Operate Assis AI and automated systems.'}</li>
-              <li>{'Display relevant customer, order, product, and related information.'}</li>
-              <li>{'Route inquiries, questions, and tasks to the appropriate party.'}</li>
-              <li>{'Operate integrations with third-party systems.'}</li>
-              <li>{'Secure the platform, prevent misuse, and identify technical issues.'}</li>
-              <li>{'Improve performance, reliability, and user experience.'}</li>
-              <li>{'Comply with legal, regulatory, and contractual requirements.'}</li>
-              <li>{'We do not sell or rent personal information.'}</li>
-            </ul>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'5. Artificial Intelligence (AI)'}</h2>
-            <p>{'Assis uses artificial intelligence and automated systems as part of its platform and services.'}</p>
-            <p>{'Customer inquiries received through communication channels connected to Assis may be processed by Assis AI to understand and classify the inquiry, identify relevant information, generate or suggest responses, perform actions related to handling the inquiry, or route the inquiry to the appropriate party.'}</p>
-            <p>{"Depending on the business's selected plan and settings, further handling of an inquiry may be performed through Assis AI, by the business or its representatives, by Assis representatives, or through a combination of these."}</p>
-            <p>{'The use of AI and automated systems is subject to this Privacy Policy and applicable law.'}</p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'6. Who May Access Information'}</h2>
-            <p>{'Access to information within the platform is restricted based on relevant permissions, roles, and services.'}</p>
-            <p>{"Depending on the business's selected plan and settings, information may be accessible to:"}</p>
-            <ul className="list-disc space-y-2 pl-5">
-              <li>{'The business.'}</li>
-              <li>{'Authorized users and representatives of the business.'}</li>
-              <li>{'Assis representatives authorized to provide services or handle customer inquiries.'}</li>
-              <li>{'Service providers necessary to operate the platform.'}</li>
-            </ul>
-            <p>{'We take measures designed to limit access to information to parties that require such access to provide the services or perform their responsibilities.'}</p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'7. Sharing Information and Service Providers'}</h2>
-            <p>{'We may share information or permit it to be processed by service providers when necessary to operate Assis, including providers of cloud infrastructure and hosting, security, communications, technology and AI services, analytics, and integrations.'}</p>
-            <p>{'These providers are permitted to access information only as necessary to provide the relevant services and subject to appropriate agreements and safeguards.'}</p>
-            <p>{'We may disclose information when required by law, court order, or lawful request from a competent authority.'}</p>
-            <p>{'Information may also be transferred in connection with a merger, acquisition, change of control, reorganization, or sale of the Company or its assets, subject to applicable law.'}</p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'8. Data Retention and Deletion'}</h2>
-            <p>{'We retain information for as long as reasonably necessary to provide our services, maintain customer interaction history, operate and secure the platform, fulfill our obligations, and comply with applicable legal requirements.'}</p>
-            <p>{'Retention periods may vary depending on the type of information, the services used by the business, our agreement with the business, and applicable legal requirements.'}</p>
-            <p>{'Businesses may contact us to request deletion of information, inquiries, or interactions stored within the platform, subject to applicable agreements and law.'}</p>
-            <p>{'Customers and end users may request to exercise applicable rights regarding their personal information.'}</p>
-            <p>{"Where Assis processes information on behalf of a business, a customer's request to access, correct, or delete personal information may need to be directed to the relevant business. Assis will assist the business in handling such requests in accordance with our applicable obligations."}</p>
-            <p>{'Certain information may be retained after a deletion request where required or permitted by law.'}</p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'9. Data Security'}</h2>
-            <p>{'We use technical and organizational measures designed to protect personal information against unauthorized access, use, alteration, loss, or disclosure.'}</p>
-            <p>{'These measures may include access controls, permissions, encryption, monitoring, and other security measures as appropriate.'}</p>
-            <p>{'However, no method of electronic transmission or storage can guarantee absolute security.'}</p>
-            <p>{'In the event of a data security incident, we will investigate and address the incident and provide notifications where required by applicable law.'}</p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'10. International Data Transfers'}</h2>
-            <p>{'Assis is a U.S.-based company, and our services may rely on infrastructure and service providers operating in different countries.'}</p>
-            <p>{'As a result, information may be processed or stored outside the country in which the business or customer is located.'}</p>
-            <p>{'Where required by applicable law, we take appropriate measures to protect personal information transferred internationally.'}</p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'11. Roles of Assis and the Business'}</h2>
-            <p>{'Depending on the circumstances and applicable law, a business using Assis may act as the data controller ("Controller"), while Assis may act as a data processor ("Processor") or service provider when processing personal information on behalf of that business.'}</p>
-            <p>{'This applies regardless of whether an inquiry is handled by the business, its representatives, Assis representatives, Assis AI, or a combination of these.'}</p>
-            <p>{'For certain information that we process for our own purposes, such as account administration, billing, security, service management, and legal compliance, Assis may act as an independent Controller as permitted by applicable law.'}</p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'12. Privacy Rights'}</h2>
-            <p>{'Depending on applicable law and your place of residence, you may have certain rights regarding your personal information, including the right to:'}</p>
-            <p>{'Request access to your personal information.'}</p>
-            <p>{'Request correction of inaccurate personal information.'}</p>
-            <p>{'Request deletion of personal information.'}</p>
-            <p>{'Request restriction of or object to certain processing, where applicable.'}</p>
-            <p>{'Request a copy or portability of your information, where applicable.'}</p>
-            <p>{'Withdraw consent where processing is based on consent.'}</p>
-            <p>{'Lodge a complaint with a competent data protection authority.'}</p>
-            <p>{'These rights may be subject to conditions and exceptions under applicable law.'}</p>
-            <p><a href="mailto:accountant@assis.care" className="font-semibold text-assis-blue hover:text-assis-blue-deep">accountant@assis.care</a></p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'13. European Union and European Economic Area Users'}</h2>
-            <p>{'Where the General Data Protection Regulation ("GDPR") applies, Assis will process personal information in accordance with its applicable role as a Controller or Processor.'}</p>
-            <p>{'The legal bases for processing may include performance of a contract, compliance with legal obligations, legitimate interests, and consent where required.'}</p>
-            <p>{'Where Assis acts as a Processor on behalf of a business, customer requests regarding personal information may need to be directed to the relevant business.'}</p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'14. California Residents'}</h2>
-            <p>{'To the extent California privacy laws apply to particular processing activities, California residents may have rights under applicable law, including the right to know what personal information is collected and to request access to, correction of, or deletion of personal information, as well as the right not to be discriminated against for exercising applicable privacy rights.'}</p>
-            <p>{'Assis does not sell personal information.'}</p>
-            <p>{'Where additional rights apply under California law, Assis will comply with the requirements applicable to it.'}</p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{"15. Children's Privacy"}</h2>
-            <p>{'Assis services are intended for businesses and are not designed for direct use by children.'}</p>
-            <p>{'We do not knowingly collect personal information from children in violation of applicable law. If we become aware that such information has been collected or processed in violation of applicable law, we will take appropriate steps to address it.'}</p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'16. Changes to This Privacy Policy'}</h2>
-            <p>{'We may update this Privacy Policy from time to time to reflect changes to our platform, services, technology, or applicable legal requirements.'}</p>
-            <p>{'The date of the most recent update will appear at the top of this Privacy Policy.'}</p>
-            <p>{'Where a material change requires notice under applicable law, we will provide appropriate notice.'}</p>
-          </section>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground">{'17. Contact Us'}</h2>
-            <p>{'For questions, requests, or concerns regarding privacy or personal information, please contact us:'}</p>
-            <address className="not-italic rounded-2xl border border-[#dfe3f5] bg-[#eef0fa] px-6 py-7 sm:px-8 sm:py-8">
-              <div className="space-y-5 text-[15px] leading-relaxed text-zinc-600 sm:text-base">
-                <div className="space-y-1">
-                  <p className="font-semibold text-foreground">Assis Online Inc.</p>
-                  <p>
-                    28 Geary St STE 650, 585
-                    <br />
-                    San Francisco, CA 94108
-                    <br />
-                    United States
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <p>
-                    <span className="font-semibold text-foreground">Email:</span>{' '}
-                    <a
-                      href="mailto:accountant@assis.care"
-                      className="text-assis-blue transition hover:text-assis-blue-deep"
-                    >
-                      accountant@assis.care
-                    </a>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-foreground">Website:</span>{' '}
-                    <a
-                      href="https://assis.care"
-                      className="text-assis-blue transition hover:text-assis-blue-deep"
-                    >
-                      https://assis.care
-                    </a>
-                  </p>
-                </div>
-              </div>
-            </address>
-          </section>
-        </div>
-
-        <p className="mt-16 text-sm text-muted-foreground">
-          © 2026 Assis Online Inc. All rights reserved.
+      <section className="space-y-4">
+        <H2>1. Scope</H2>
+        <p>
+          This Policy applies when Assis processes personal information through the Services - for
+          example when a business connects Assis, when someone visits our website or contacts us, or
+          when customer messages and related data are processed through Assis channels (Website
+          Plugin, Website Chat, WhatsApp, Email, and other supported channels).
         </p>
-      </main>
-    </div>
+        <p>
+          Depending on the plan (Powered by Assis or Care by Assis) and settings, an interaction may
+          be handled by Assis AI, the business or its representatives, Assis representatives, or a
+          combination. Storage of an interaction in Assis does not by itself mean an Assis
+          representative handled it.
+        </p>
+        <p>
+          Where Assis processes customer data on behalf of a business, that business&apos;s own
+          privacy notice also applies, and many individual requests should be directed to that
+          business first. Processing on behalf of businesses is further governed by the{" "}
+          <DocLink slug="DataProcessingAgreement" />.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <H2>2. Information We Collect</H2>
+        <p>Depending on how the Services are used, we may collect and process:</p>
+
+        <div className="space-y-3">
+          <H3>Business and account information</H3>
+          <p>
+            Store or business name, user name, website, email, phone, account identifiers, login
+            credentials, roles and permissions, billing and subscription information, plan and
+            configuration settings, and similar account data.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <H3>Customer and end-user information</H3>
+          <p>
+            Name, phone, email, shipping or billing address, customer identifiers, and other details
+            provided by the customer or made available by the business through Assis or connected
+            systems.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <H3>Communications and interactions</H3>
+          <p>
+            Messages, inquiries, responses, conversation content, files and attachments, interaction
+            history, channel metadata (such as timestamps or channel type), and related support
+            records - including historical conversations a business provides during onboarding to
+            configure AI and build a knowledge base.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <H3>Orders and transactions</H3>
+          <p>
+            Order numbers, dates, products, amounts, currency, order status, payment-status
+            information, shipping and delivery details, returns, exchanges, refunds, cancellations,
+            and similar support-related transaction data.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <H3>Catalog and knowledge-base materials</H3>
+          <p>
+            Product and catalog data, policies, promotions, coupons, discounts, and other business
+            materials used to operate the Assis knowledge base and AI responses.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <H3>Technical and usage data</H3>
+          <p>
+            IP address, device and browser information, logs, diagnostics, approximate location
+            derived from IP, activity on the website or platform, and similar technical data needed
+            to operate and secure the Services.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <H3>Cookies and similar technologies</H3>
+          <p>
+            Data collected through cookies and similar technologies on Assis websites, as described
+            in the <DocLink slug="CookiePolicy" />.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <H3>Integration and platform data</H3>
+          <p>
+            Data received from systems a business connects (for example Shopify, WooCommerce, CRM,
+            shipping, or messaging providers), including store identifiers, catalog, customer and
+            order data, fulfillment data, and events or webhooks.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <H3>Direct contact information</H3>
+          <p>
+            Information submitted through demo or contact forms, emails to Assis, chat on our
+            website, and similar sales or support communications.
+          </p>
+        </div>
+
+        <p>
+          We may receive this information from you, from the business using Assis, automatically
+          through use of the Services or website, from connected platforms and integrations, or from
+          publicly available business sources when a business authorizes knowledge-base features such
+          as website scanning.
+        </p>
+        <p>
+          Assis messaging channels are free-text. Content that users or businesses choose to send
+          (including unnecessary or sensitive details) may be received and stored as part of
+          providing the Services. Please avoid sharing information that is not needed.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <H2>3. How We Use Information</H2>
+        <p>We use personal information to:</p>
+        <List spacing="loose">
+          <Bullet>Provide, operate, maintain, authenticate, and secure the Services</Bullet>
+          <Bullet>Receive, store, display, route, and manage customer inquiries and history</Bullet>
+          <Bullet>
+            Enable businesses and their representatives to provide customer care through Assis
+          </Bullet>
+          <Bullet>
+            Provide Assis human care under Care by Assis, including Care workflows (tasks, questions,
+            statuses, records) where included
+          </Bullet>
+          <Bullet>
+            Operate Assis AI and automation to understand, classify, respond to, and assist with
+            inquiries
+          </Bullet>
+          <Bullet>
+            Build and operate a knowledge base and display relevant order, product, shipping, and
+            policy context
+          </Bullet>
+          <Bullet>
+            Send proactive messages on a business&apos;s behalf where configured (for example
+            abandoned cart, order or shipping updates, return/refund updates, support follow-ups, and
+            other transactional, operational, or authorized promotional messages). The business is
+            responsible for ensuring it has the rights, notices, consents, and legal bases required
+            for such messages
+          </Bullet>
+          <Bullet>
+            Operate integrations and respond to platform events and webhooks (including e-commerce
+            apps such as Shopify). If a platform requires deletion or data-request workflows on
+            uninstall or customer request, Assis will handle them under that platform&apos;s rules,
+            this Policy, the DPA, and applicable law
+          </Bullet>
+          <Bullet>Process billing, subscriptions, and business account support</Bullet>
+          <Bullet>
+            Monitor performance, prevent fraud or abuse, troubleshoot, and improve reliability
+          </Bullet>
+          <Bullet>
+            Analyze usage; research and develop the Services; and improve Assis AI as described in
+            Section 4
+          </Bullet>
+          <Bullet>
+            Create aggregated, anonymized, or de-identified information for analytics, security, and
+            product improvement
+          </Bullet>
+          <Bullet>
+            Operate the Assis website and measure marketing or analytics as described in the{" "}
+            <DocLink slug="CookiePolicy" label="Cookie Policy" />
+          </Bullet>
+          <Bullet>Comply with law, enforce agreements, and protect rights and safety</Bullet>
+        </List>
+        <p>
+          Assis processes personal information only as permitted by applicable law and applicable
+          agreements with businesses.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <H2>4. Artificial Intelligence</H2>
+        <p>
+          Assis uses AI and automated systems as part of the Services. Inquiries may be processed to
+          understand and classify them, identify relevant information, generate or suggest responses,
+          perform supported actions, route messages, trigger proactive messages, or identify when
+          human help may be needed. Further handling depends on the business&apos;s plan and
+          settings. AI may produce incomplete or inaccurate results; humans may review interactions
+          where applicable.
+        </p>
+        <p>
+          Assis may use conversations, historical support materials, and related service data to
+          operate and improve AI features for the business that provided or generated that data (for
+          example knowledge-base configuration, response quality, routing, and similar service
+          features for that business).
+        </p>
+        <p>
+          Assis may also use aggregated, anonymized, or de-identified information to improve the
+          Services and Assis AI more generally.
+        </p>
+        <p>
+          Where Assis acts as processor / service provider for a business, any use of that
+          business&apos;s Customer Personal Data for model training or fine-tuning is limited to what
+          applicable law and the Assis-business agreement (including the DPA) permit. Assis does not
+          claim a broader right to use Customer Personal Data for AI training than those documents
+          allow.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <H2>5. Roles of Assis and the Business</H2>
+        <p>
+          When a business uses Assis to process information about its customers, the business
+          typically acts as controller (or equivalent), and Assis acts as processor, service
+          provider, contractor, or similar role - whether an inquiry is handled by the business,
+          Assis AI, Assis representatives, or a combination, and whether messages are reactive or
+          proactive.
+        </p>
+        <p>
+          The business should provide appropriate privacy notices to its customers (including at or
+          before collection where required by law) and obtain any consents required by law. For
+          information Assis processes for its own purposes (for example account administration,
+          billing, security, legal compliance, website operations, and, where Assis is an independent
+          controller, certain product analytics or AI improvement using permitted data), Assis may
+          act as an independent controller.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <H2>6. Sharing and Access</H2>
+        <p>
+          Access is limited based on permissions, roles, and selected services. Information may be
+          accessible to the business and its authorized users; Assis personnel who need access to
+          operate, support, secure, or improve the Services (including Care representatives where
+          applicable); and service providers / subprocessors.
+        </p>
+        <p>
+          We may use service providers for cloud hosting, security and monitoring, communications and
+          messaging (including WhatsApp/Meta and email providers), AI and technology services,
+          analytics and logging, payment and billing for business subscriptions, e-commerce and other
+          integrations, and support tooling. They may process information only as needed to provide
+          their services, under appropriate contractual and security requirements.
+        </p>
+        <p>
+          We may also disclose information when required by law or lawful request; to protect rights,
+          safety, or security; to detect or investigate fraud, abuse, or security incidents; or in
+          connection with a merger, acquisition, financing, reorganization, or sale of assets,
+          subject to applicable law.
+        </p>
+        <p>
+          We do not sell personal information for money. Some website analytics or advertising cookies
+          may be treated as &quot;sharing&quot; or targeted advertising under certain U.S. state laws
+          (including California). Where that applies, available controls are described in the{" "}
+          <DocLink slug="CookiePolicy" /> and, where required, on the Website. Assis does not add a
+          separate &quot;Do Not Sell&quot; link unless required by how cookies or other tools are
+          actually configured.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <H2>7. Cookies</H2>
+        <p>
+          Assis uses cookies and similar technologies on its websites as described in the{" "}
+          <DocLink slug="CookiePolicy" />, including categories, purposes, consent where required, and
+          how to manage preferences. Cookie practices on the Website should match that Cookie Policy.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <H2>8. Retention and Deletion</H2>
+        <p>
+          We retain information as reasonably necessary to provide the Services, maintain history,
+          operate and secure the platform, fulfill contracts, resolve disputes, and comply with law.
+          Exact periods may vary; Assis applies the following principles:
+        </p>
+        <List spacing="loose">
+          <Bullet>
+            <Term>Account and business profile data</Term> - while the account is active, and for a
+            reasonable period after closure or termination as needed for wind-down, disputes,
+            security, and legal obligations
+          </Bullet>
+          <Bullet>
+            <Term>Customer conversations and related support records</Term> - according to the
+            agreement with the business, operational needs to provide support history, platform
+            requirements, and legal or security needs
+          </Bullet>
+          <Bullet>
+            <Term>Billing and subscription records</Term> - for as long as needed for accounting, tax,
+            audit, and other legal requirements
+          </Bullet>
+          <Bullet>
+            <Term>Security and system logs</Term> - for a period reasonably needed for security,
+            troubleshooting, and compliance
+          </Bullet>
+          <Bullet>
+            <Term>Website and marketing contact data</Term> - while needed to respond to inquiries or
+            manage the relationship, and then as needed for legitimate business or legal purposes
+          </Bullet>
+          <Bullet>
+            <Term>Backups</Term> - retained according to Assis backup cycles and overwritten or
+            deleted in the ordinary course; deletion from backups may lag live-system deletion
+          </Bullet>
+        </List>
+        <p>
+          Businesses may request deletion of information stored in the platform, subject to
+          agreements and law. Where Assis processes information on behalf of a business, customer
+          access, correction, or deletion requests may need to go to that business first; Assis will
+          assist as required.
+        </p>
+        <p>
+          If a business disconnects or uninstalls Assis (including from an e-commerce platform),
+          Assis will delete or anonymize related store and customer data within a reasonable period
+          consistent with platform requirements, the DPA, backups, security logs, and legal retention
+          needs. Some information may be retained where required or permitted by law.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <H2>9. Security</H2>
+        <p>
+          We use technical and organizational measures designed to protect personal information
+          against unauthorized access, use, alteration, loss, or disclosure, including access
+          controls, encryption in transit and/or at rest where appropriate, monitoring, and
+          authentication. No method of transmission or storage is completely secure. If a security
+          incident occurs, we will investigate and provide notices where required by law.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <H2>10. International Transfers</H2>
+        <p>
+          Assis is based in the United States. Information may be processed or stored in the United
+          States and other countries. Where required (including under GDPR), Assis uses appropriate
+          transfer safeguards, which may include Standard Contractual Clauses or other lawful
+          mechanisms.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <H2>11. Your Rights</H2>
+        <p>
+          Depending on applicable law and where you live, you may have rights to access, correct,
+          delete, or port personal information; restrict or object to certain processing; withdraw
+          consent where processing is based on consent; opt out of certain processing or targeted
+          advertising; and lodge a complaint with a supervisory authority. Rights are subject to
+          legal conditions and exceptions.
+        </p>
+        <p>
+          Requests: <Mail />. We may need to verify identity. If Assis processes your information on
+          behalf of a business, contact that business first when required; Assis will assist the
+          business as required by law and contract.
+        </p>
+        <p>
+          <Term>EEA / UK (and similar laws):</Term> where Assis is controller, legal bases may include
+          contract, legal obligation, legitimate interests, and consent where required. Where Assis
+          is processor for a business, that business generally determines the legal basis and
+          responds to rights requests, with Assis assistance.
+        </p>
+        <p>
+          <Term>California and other U.S. state laws:</Term> residents may have rights to know,
+          access, correct, delete, and not be discriminated against for exercising privacy rights,
+          subject to exceptions. Assis does not sell personal information for money. This Policy is
+          one part of California compliance; where Assis collects personal information as a business,
+          notices at collection and any required opt-out mechanisms must match actual practices. For
+          website cookies that may involve &quot;sharing&quot; or targeted advertising, see the{" "}
+          <DocLink slug="CookiePolicy" label="Cookie Policy" />.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <H2>12. Children</H2>
+        <p>
+          The Services are not directed to anyone under 18. We do not knowingly collect personal
+          information from anyone under 18. If we learn that such information has been collected, we
+          will take reasonable steps to delete it.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <H2>13. Changes</H2>
+        <p>
+          We may update this Policy from time to time. The date at the top shows the latest update.
+          Where a material change requires notice under applicable law, we will provide appropriate
+          notice.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <H2>14. Contact</H2>
+        <p>For privacy questions or requests:</p>
+        <ContactCard />
+      </section>
+    </LegalPage>
   );
 }

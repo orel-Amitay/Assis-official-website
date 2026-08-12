@@ -1,11 +1,13 @@
 import { DemoModalProvider } from "@/components/DemoModal";
-import WhatsAppHeart from "@/components/WhatsAppHeart";
+import AssisPlugin from "@/components/AssisPlugin";
 import Nav from "@/components/Nav";
 import SectionBand from "@/components/SectionBand";
 import Hero from "@/components/sections/Hero";
 import Metrics from "@/components/sections/Metrics";
 import Journey from "@/components/sections/Journey";
 import CustomerStories from "@/components/sections/CustomerStories";
+import WaysSection from "@/components/brand/WaysSection";
+import RealTimeIntelligence from "@/components/sections/RealTimeIntelligence";
 import Platforms from "@/components/sections/Platforms";
 import Relationship from "@/components/sections/Relationship";
 import FAQ from "@/components/sections/FAQ";
@@ -39,16 +41,24 @@ export default function Home() {
             <Hero />
             <Metrics />
           </SectionBand>
+          {/* Customers first */}
           <SectionBand tone="cool">
             <CustomerStories />
           </SectionBand>
           <SectionBand tone="slate">
             <Journey />
           </SectionBand>
+          <SectionBand tone="paper">
+            <RealTimeIntelligence />
+          </SectionBand>
           <SectionBand tone="mist">
-            <Platforms />
+            <WaysSection />
           </SectionBand>
           <SectionBand tone="paper">
+            <Platforms />
+          </SectionBand>
+          {/* Why Assis last before FAQ */}
+          <SectionBand tone="cool">
             <Relationship />
           </SectionBand>
           <SectionBand tone="soft">
@@ -58,7 +68,7 @@ export default function Home() {
             <FinalCTA />
             <Footer />
           </SectionBand>
-          <WhatsAppHeart />
+          <AssisPlugin />
         </div>
       </div>
     </DemoModalProvider>

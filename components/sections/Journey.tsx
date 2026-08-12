@@ -29,41 +29,98 @@ const STAGES: {
   metricNote: string;
   points: string[];
   icon: LucideIcon;
+  visual: "checkout" | "refund" | "signal";
 }[] = [
   {
     id: "before",
     label: "Before checkout",
-    title: "Help more shoppers buy.",
-    body: "Product questions, size & fit, shipping, and return fears get answered in the chat, before the cart is abandoned.",
+    title: "Hesitation becomes a purchase.",
+    body: "Customers get clarity on size, shipping, and returns before doubt turns into an abandoned cart.",
     metric: "43%",
     metricLabel: "Conversion rate",
     metricNote: "Average across Assis stores.",
-    points: ["Product Q&A", "Size, fit & policy", "Checkout confidence"],
+    points: ["Product confidence", "Size, fit & policy", "Checkout clarity"],
     icon: ShoppingCart,
+    visual: "checkout",
   },
   {
     id: "after",
     label: "After the order",
-    title: "Keep refund money in the store.",
-    body: "Refunds turn into exchanges. Cash-outs turn into store credit and discount codes. The shopper stays, and so does the revenue.",
+    title: "Trust stays. Revenue stays.",
+    body: "Delivery anxiety, refunds, and order issues are handled before they become chargebacks, bad reviews, or lost customers.",
     metric: "93%",
     metricLabel: "Of at-risk revenue kept",
-    metricNote: "Less money walking out as refunds. More staying as orders.",
-    points: ["Exchanges over refunds", "Refund → credit / coupon", "WISMO & order issues"],
+    metricNote: "Less money leaving as refunds. More staying as orders.",
+    points: ["Exchanges over refunds", "Credit & recovery", "WISMO & order issues"],
     icon: Truck,
+    visual: "refund",
   },
   {
     id: "behind",
-    label: "From every chat",
-    title: "See what shoppers keep asking for.",
-    body: "Across chats, patterns show up: what to restock, what to list, and what frustrates people. Growth turns those signals into reports and monthly reviews.",
+    label: "Across every touchpoint",
+    title: "The business learns what customers need.",
+    body: "Demand, friction, and product gaps surface from the customer side - so Grow turns experience into better decisions.",
     metric: "LTV ↑",
     metricLabel: "Customer lifetime value",
-    metricNote: "Better service compounds into more repeat orders.",
-    points: ["What shoppers ask for", "Where ops break", "Reports on Growth"],
+    metricNote: "Trust compounds into more repeat orders.",
+    points: ["Demand signals", "Ops friction", "Reports on Grow"],
     icon: Lightbulb,
+    visual: "signal",
   },
 ];
+
+function StageVisual({ type }: { type: (typeof STAGES)[number]["visual"] }) {
+  if (type === "checkout") {
+    return (
+      <div className="relative flex h-32 flex-col justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#eef4ff] to-[#f7f9fc] px-4">
+        <div className="ml-auto max-w-[88%] rounded-2xl rounded-br-md bg-white px-3 py-2 text-[11px] leading-snug text-zinc-500 shadow-sm">
+          Will this fit? Do you ship tomorrow?
+        </div>
+        <div className="max-w-[90%] rounded-2xl rounded-bl-md bg-assis-blue px-3 py-2 text-[11px] leading-snug text-white">
+          Yes - size L in stock. Ships today.
+        </div>
+        <span className="absolute right-3 top-3 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-assis-blue shadow-sm">
+          Bought
+        </span>
+      </div>
+    );
+  }
+
+  if (type === "refund") {
+    return (
+      <div className="grid h-32 grid-cols-2 gap-2 rounded-2xl bg-gradient-to-br from-[#eef4ff] to-[#f7f9fc] p-3">
+        <div className="flex flex-col justify-between rounded-xl bg-white/70 p-2.5 opacity-50">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+            Refund
+          </span>
+          <span className="text-xs font-semibold text-zinc-400 line-through">−$128</span>
+        </div>
+        <div className="flex flex-col justify-between rounded-xl bg-white p-2.5 shadow-sm">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-assis-blue">
+            Exchange
+          </span>
+          <span className="text-xs font-semibold text-foreground">Kept in store</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex h-32 flex-col justify-center gap-1.5 rounded-2xl bg-gradient-to-br from-[#eef4ff] to-[#f7f9fc] px-5">
+      <div className="h-2 w-[78%] rounded-full bg-assis-blue/25" />
+      <div className="h-2 w-[62%] rounded-full bg-assis-blue/15" />
+      <div className="h-2 w-[70%] rounded-full bg-assis-blue/20" />
+      <div className="mt-1.5 flex gap-1.5">
+        <span className="rounded bg-assis-blue px-2 py-0.5 text-[9px] font-bold text-white">
+          Ask pattern
+        </span>
+        <span className="rounded bg-white px-2 py-0.5 text-[9px] font-bold text-assis-blue shadow-sm">
+          New SKU
+        </span>
+      </div>
+    </div>
+  );
+}
 
 const CHANNELS = [
   { label: "WhatsApp", iconSrc: "/brand/channel-whatsapp.svg" },
@@ -87,21 +144,24 @@ function StageCard({
     <div
       className={`overflow-hidden rounded-[1.5rem] border border-zinc-200/70 bg-white/90 backdrop-blur-sm sm:rounded-[2rem] ${className}`}
     >
-      <div className="grid sm:h-full sm:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid sm:grid-cols-[0.95fr_1.05fr]">
         <div className="flex flex-col justify-center border-b border-zinc-200/70 px-6 py-7 sm:border-b-0 sm:border-r sm:px-11 sm:py-11">
-          <StageIcon
-            className="mb-3 h-6 w-6 text-assis-blue/70 sm:mb-4 sm:h-7 sm:w-7"
-            strokeWidth={1.6}
-          />
-          <p className="font-display text-4xl font-bold tracking-[-0.05em] text-assis-blue sm:text-6xl">
-            {stage.metric}
-          </p>
-          <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-500 sm:mt-3">
-            {stage.metricLabel}
-          </p>
-          <p className="mt-2 max-w-xs text-sm leading-relaxed text-zinc-500 sm:mt-3">
-            {stage.metricNote}
-          </p>
+          <div className="mb-4 flex items-center gap-2">
+            <StageIcon
+              className="h-5 w-5 text-assis-blue/70"
+              strokeWidth={1.6}
+            />
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-500">
+              {stage.metricLabel}
+            </p>
+          </div>
+          <StageVisual type={stage.visual} />
+          <div className="mt-4 flex items-baseline gap-2">
+            <p className="font-display text-2xl font-bold tracking-[-0.04em] text-assis-blue sm:text-3xl">
+              {stage.metric}
+            </p>
+            <p className="text-sm leading-relaxed text-zinc-500">{stage.metricNote}</p>
+          </div>
         </div>
 
         <div className="flex flex-col justify-center px-6 py-7 sm:px-11 sm:py-11">
@@ -137,7 +197,7 @@ function ChannelsBlock() {
         <Ticker items={CHANNELS} speed="normal" fadeColor="#eef1f5" />
       </div>
       <p className="mt-5 text-center text-[11px] text-zinc-400">
-        WhatsApp, IG, email & more · Your team joins when the shopper needs a person
+        WhatsApp, email & more · Where your customers already reach you
       </p>
     </>
   );
@@ -155,20 +215,16 @@ export default function Journey() {
         <div className="mx-auto max-w-5xl">
           <ScrollReveal>
             <p className="text-center text-[11px] font-medium uppercase tracking-[0.24em] text-zinc-400">
-              One operation
+              How it works
             </p>
             <h2 className="mt-4 font-display text-center text-[1.75rem] font-bold tracking-[-0.04em] text-foreground sm:text-5xl">
-              Every moment after
+              One operating layer
               <br />
-              they land on your store.
+              across the shopping journey.
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-center text-[15px] leading-relaxed text-zinc-500 sm:text-base">
-              Assis covers shoppers before checkout, after the order ships, and surfaces what those
-              conversations say about your store.
-            </p>
-            <p className="mx-auto mt-4 max-w-xl text-center text-sm font-medium leading-relaxed text-foreground/80">
-              AI handles the volume. Your team — or ours — steps in when a real person is needed.
-              <span className="text-zinc-500"> The service still feels human.</span>
+              Before they buy. After they order. And in what those moments teach your business
+              next.
             </p>
           </ScrollReveal>
         </div>
@@ -177,13 +233,13 @@ export default function Journey() {
       <div className="px-5 pt-8 sm:px-10 sm:pt-12">
         <div className="mx-auto flex max-w-md items-center justify-center gap-3">
           <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
-            Your store
+            Your business
           </span>
           <div className="h-px w-8 bg-zinc-300 sm:w-14" />
           <AssisHeartMark size={28} animate={false} glowing={false} />
           <div className="h-px w-8 bg-zinc-300 sm:w-14" />
           <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
-            Your shoppers
+            Your customers
           </span>
         </div>
       </div>
@@ -193,7 +249,7 @@ export default function Journey() {
         <div className="mx-auto max-w-4xl">
           <div className="rounded-2xl border border-zinc-200/80 bg-white p-2 shadow-sm">
             <p className="px-2 pb-2 pt-1 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
-              Choose a moment
+              Choose a stage
             </p>
             <div className="flex flex-col gap-1.5">
               {STAGES.map((s, i) => {
@@ -307,10 +363,10 @@ export default function Journey() {
             </div>
 
             <p className="mt-4 text-center text-[11px] text-zinc-400">
-              Scroll to move through each moment
+              Scroll through each stage
             </p>
 
-            <div className="relative mt-8 h-[380px] sm:mt-10 sm:h-[360px]">
+            <div className="relative mt-8 sm:mt-10">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={desktopStage.id}
@@ -318,9 +374,8 @@ export default function Journey() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute inset-0"
                 >
-                  <StageCard stage={desktopStage} className="h-full" />
+                  <StageCard stage={desktopStage} />
                 </motion.div>
               </AnimatePresence>
             </div>

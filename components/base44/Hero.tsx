@@ -75,7 +75,7 @@ export default function Hero() {
               transition={{ duration: 0.5, delay: 0.14 }}
               className="mt-5 max-w-xl text-base leading-relaxed text-[hsl(var(--on-surface-variant))] sm:text-lg"
             >
-              Before checkout, after shipping, and every chat in between — Assis protects
+              Before checkout, after shipping, and every chat in between - Assis protects
               revenue so shoppers stay, buy again, and stop becoming tickets.
             </motion.p>
 

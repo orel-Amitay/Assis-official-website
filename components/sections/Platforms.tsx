@@ -276,10 +276,11 @@ export default function Platforms() {
       <div className="relative mx-auto max-w-5xl px-5 sm:px-10">
         <ScrollReveal>
           <h2 className="font-display text-center text-[1.75rem] font-bold tracking-[-0.04em] text-foreground sm:text-5xl">
-            Works where your store already lives.
+            Works where your store already runs.
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-center text-sm leading-relaxed text-zinc-500 sm:text-base">
-            Shopify first. Payments, ads, and carriers around it. Assis sits in the middle.
+            Shopify first. Payments, ads, and carriers around it. Assis sits between your business
+            and every customer.
           </p>
           <p className="mx-auto mt-2 max-w-md text-center text-xs text-zinc-400">
             Live on Shopify now. Other platforms via demo.
