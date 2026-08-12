@@ -71,7 +71,7 @@ function ensureMountElement() {
   mount.dataset.direction = "ltr";
   mount.dataset.language = "en";
   mount.dataset.buttonLabel = "Need help?";
-  mount.dataset.businessLogo = `${window.location.origin}/brand/assis-heart-chat.png`;
+  mount.dataset.businessLogo = `${window.location.origin}/brand/assis-heart-classic.png`;
   mount.dataset.phonePrefix = "1";
   mount.dataset.assisBackendUrl = "https://backend.assis.care";
   mount.dataset.communicationChannels = ["whatsapp"].toString();
@@ -97,7 +97,7 @@ function loadSitePluginTweaks() {
     return;
   }
 
-  const logoUrl = `${window.location.origin}/brand/assis-heart-chat.png`;
+  const logoUrl = `${window.location.origin}/brand/assis-heart-classic.png`;
 
   const style = document.createElement("style");
   style.id = PLUGIN_SITE_STYLE_ID;
@@ -337,7 +337,7 @@ function setupChatPromoBanner() {
 }
 
 function replacePluginHeartIcon() {
-  const logoUrl = `${window.location.origin}/brand/assis-heart-chat.png`;
+  const logoUrl = `${window.location.origin}/brand/assis-heart-classic.png`;
 
   const swap = () => {
     const btn = document.querySelector(".fixed-heart-btn");

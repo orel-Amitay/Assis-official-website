@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "pdf:powered-by-assis": "bash scripts/generate-powered-by-assis-pdf.sh"
   },
   "dependencies": {
     "clsx": "^2.1.1",

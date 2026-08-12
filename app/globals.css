@@ -48,6 +48,19 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Full-document capture for /PoweredByAssis/print → PDF */
+html:has([data-print-page]),
+body:has([data-print-page]) {
+  height: auto !important;
+  overflow: visible !important;
+}
+
+html:has([data-print-page]) #app-scroll {
+  height: auto !important;
+  min-height: 100%;
+  overflow: visible !important;
+}
+
 ::selection {
   background: var(--assis-blue);
   color: #fff;
