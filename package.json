@@ -10,10 +10,12 @@
     "pdf:powered-by-assis": "bash scripts/generate-powered-by-assis-pdf.sh"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.40.0",
     "lucide-react": "^1.23.0",
     "next": "16.2.9",
+    "next-auth": "^5.0.0-beta.32",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "resend": "^6.18.1"

@@ -114,6 +114,55 @@ html:has([data-print-page]) #app-scroll {
   scrollbar-width: none;
 }
 
+@keyframes clarity-slide {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.clarity-slide {
+  animation: clarity-slide 0.15s ease-out;
+}
+
+@keyframes clarity-heartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.1);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.08);
+  }
+  70% {
+    transform: scale(1);
+  }
+}
+
+@keyframes clarity-scan-ring {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-clarity-heartbeat {
+  animation: clarity-heartbeat 1.35s ease-in-out infinite;
+}
+
+.animate-clarity-scan-ring {
+  animation: clarity-scan-ring 1.1s linear infinite;
+}
+
 @keyframes float-y {
   0%,
   100% {
@@ -226,7 +275,10 @@ html:has([data-print-page]) #app-scroll {
   .animate-float-slow,
   .animate-float-alt,
   .animate-orbit,
-  .animate-orbit-reverse {
+  .animate-orbit-reverse,
+  .animate-clarity-heartbeat,
+  .animate-clarity-scan-ring,
+  .clarity-slide {
     animation: none;
   }
 }
