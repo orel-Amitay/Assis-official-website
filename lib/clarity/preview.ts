@@ -1,3 +1,53 @@
+const STOP = new Set(
+  "את של על עם או לא גם זה זו הוא היא יש אין כל מה איך אם כי the and for from with your you our are is to in of a an we they this that".split(" "),
+);
+
+function highlightTokens(value: string) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .split(/\s+/)
+    .filter((word) => word.length >= 2 && !STOP.has(word));
+}
+
+export function findHighlightSnippet(html: string, queries: string[]) {
+  const text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;|&amp;|&quot;|&#39;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const query = queries.filter(Boolean).join(" ");
+  const tokens = highlightTokens(query);
+  if (!text || tokens.length === 0) return queries.find((item) => item.trim())?.slice(0, 180) || "";
+
+  const windows: string[] = [];
+  const words = text.split(" ").filter(Boolean);
+  for (let i = 0; i < words.length; i += 8) {
+    const chunk = words.slice(i, i + 18).join(" ");
+    if (chunk.length >= 12) windows.push(chunk);
+  }
+
+  let best = "";
+  let bestScore = 0;
+  for (const chunk of windows) {
+    const lower = chunk.toLowerCase();
+    let score = 0;
+    for (const token of tokens) {
+      if (!lower.includes(token)) continue;
+      score += /\d/.test(token) || token.length >= 5 ? 4 : 2;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      best = chunk;
+    }
+  }
+  if (bestScore >= 4 && best) return best.slice(0, 220);
+  return queries.find((item) => item.trim())?.slice(0, 180) || best.slice(0, 180);
+}
+
 export function highlightPreviewScript(quote: string) {
   const safe = JSON.stringify(quote).replace(/</g, "\\u003c");
   return `<script>
@@ -20,58 +70,74 @@ export function highlightPreviewScript(quote: string) {
     var n = norm(text);
     var l = loose(text);
     var out = [];
-    function add(v) { if (v && v.length >= 8 && out.indexOf(v) < 0) out.push(v); }
+    function add(v) { if (v && v.length >= 3 && out.indexOf(v) < 0) out.push(v); }
     add(n);
     add(l);
     if (n.length > 48) add(n.slice(0, 48));
-    if (n.length > 28) add(n.slice(0, 28));
+    if (n.length > 24) add(n.slice(0, 24));
     if (l.length > 36) add(l.slice(0, 36));
-    var words = n.split(" ").filter(function (w) { return w.length > 2; });
+    var words = n.split(" ").filter(function (w) { return w.length > 1; });
+    if (words.length >= 3) add(words.slice(0, 4).join(" "));
     if (words.length >= 5) add(words.slice(0, 6).join(" "));
-    if (words.length >= 8) add(words.slice(2, 8).join(" "));
+    words.forEach(function (w) {
+      if (w.length >= 4 || /\\d/.test(w)) add(w);
+    });
     return out;
+  }
+
+  function tokenScore(hay, needles) {
+    var score = 0;
+    for (var i = 0; i < needles.length; i++) {
+      var needle = needles[i];
+      if (!needle || needle.length < 3) continue;
+      if (hay.indexOf(needle) >= 0) score += needle.length >= 5 || /\\d/.test(needle) ? 4 : 2;
+    }
+    return score;
   }
 
   function smallestMatch(needles) {
     var nodes = document.body.querySelectorAll("p, li, td, th, span, a, strong, em, small, label, h1, h2, h3, h4, h5, div, section, article, blockquote, figcaption");
     var best = null;
+    var bestScore = 0;
     var bestLen = Infinity;
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
       if (!el || !el.textContent) continue;
-      if (el.closest("script, style, noscript, svg, textarea")) continue;
+      if (el.closest("script, style, noscript, svg, textarea, #clarity-find-banner")) continue;
       var t = norm(el.textContent);
       var tl = loose(el.textContent);
-      if (!t || t.length > 2000) continue;
-      for (var n = 0; n < needles.length; n++) {
-        var needle = needles[n];
-        if ((t.indexOf(needle) >= 0 || tl.indexOf(loose(needle)) >= 0) && t.length < bestLen) {
-          best = el;
-          bestLen = t.length;
-          break;
-        }
+      if (!t || t.length > 1800) continue;
+      var score = Math.max(tokenScore(t, needles), tokenScore(tl, needles.map(loose)));
+      if (score >= 4 && (score > bestScore || (score === bestScore && t.length < bestLen))) {
+        best = el;
+        bestScore = score;
+        bestLen = t.length;
       }
     }
     return best;
   }
 
   function wrapTextNode(el, needles) {
+    var tokens = [];
+    needles.forEach(function (n) {
+      String(n || "").split(" ").forEach(function (w) {
+        if ((w.length >= 3 || /\\d/.test(w)) && tokens.indexOf(w) < 0) tokens.push(w);
+      });
+    });
+    tokens.sort(function (a, b) { return b.length - a.length; });
     var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     var node;
     while ((node = walker.nextNode())) {
       var raw = node.textContent || "";
-      var lowered = norm(raw);
-      for (var i = 0; i < needles.length; i++) {
-        var needle = needles[i];
-        var idx = lowered.indexOf(needle);
+      var lowered = raw.toLowerCase();
+      for (var i = 0; i < tokens.length; i++) {
+        var token = tokens[i];
+        var idx = lowered.indexOf(token);
         if (idx < 0) continue;
         try {
-          var start = Math.max(0, raw.toLowerCase().indexOf(needle.slice(0, Math.min(12, needle.length))));
-          if (start < 0) start = 0;
-          var end = Math.min(raw.length, start + Math.min(raw.length - start, Math.max(needle.length, 24)));
           var range = document.createRange();
-          range.setStart(node, start);
-          range.setEnd(node, end);
+          range.setStart(node, idx);
+          range.setEnd(node, Math.min(raw.length, idx + Math.max(token.length, 8)));
           var mark = document.createElement("mark");
           mark.setAttribute("data-clarity", "1");
           range.surroundContents(mark);

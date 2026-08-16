@@ -1,40 +1,60 @@
 import type { ClarityDraft } from "./draft";
-import mraKb from "./fixtures/knowledge-base-mra-il.json";
+import { canonicalGroupId, KB_TEMPLATE } from "./kb-template";
 import type { KnowledgeCategory } from "./review-state";
 import { GROUPS } from "./topics";
 import { withProcessQas } from "./process-templates";
 import type { CustomQaItem, ScanResult, TopicGroupId } from "./types";
 
 const CATEGORY_ALIASES: Record<string, TopicGroupId> = {
-  "שאלות תשובות - מהאתר": "site_qa",
-  "site q&a": "site_qa",
-  "מידע כללי": "general",
-  "general info": "general",
+  מותג: "brand",
+  brand: "brand",
+  חנויות: "stores",
+  stores: "stores",
+  "חבר מועדון, קהילה וניוזלטר": "community",
+  "club, community & newsletter": "community",
+  "כרטיס מתנה (גיפטקארד) והזמנות מתנה": "gifts",
+  "gift cards & gift orders": "gifts",
+  תשלום: "payment",
+  payment: "payment",
+  הזמנות: "orders",
+  orders: "orders",
   משלוחים: "delivery",
   shipping: "delivery",
+  מלאי: "stock",
+  stock: "stock",
+  "החלפות / החזרות": "returns",
+  "exchanges / returns": "returns",
+  "מידע נוסף": "extra",
+  "additional info": "extra",
+  מוצרים: "products",
+  products: "products",
+  "שאלות תשובות - מהאתר": "products",
+  "site q&a": "products",
+  "מידע כללי": "brand",
+  "general info": "brand",
   "החלפות החזרות": "returns",
   "returns & exchanges": "returns",
-  "פגמים/אחריות": "warranty",
-  "defects & warranty": "warranty",
-  "מבצעים הנחות והטבות": "promos",
-  "promos & discounts": "promos",
+  "פגמים/אחריות": "returns",
+  "defects & warranty": "returns",
+  "מבצעים הנחות והטבות": "returns",
+  "promos & discounts": "returns",
   "מידע נוסף - מוצרים": "products",
   "more product info": "products",
   "מידע על מוצרים": "products",
-  "לפני רכישה/מכירה": "prebuy",
-  "before purchase": "prebuy",
-  "משפיעניות וקודי קופון": "influencers",
-  "influencers & coupon codes": "influencers",
-  "דגשים חשובים": "notes",
-  "important notes": "notes",
-  "שעות פעילות מענה שירות לקוחות וואטסאפ": "service",
-  "support hours": "service",
-  חשבוניות: "billing",
-  invoices: "billing",
-  "פלטפורמות ואינטגרציות": "integrations",
-  "platforms & integrations": "integrations",
-  "שאלות פתוחות": "open",
-  "open questions": "open",
+  "לפני רכישה/מכירה": "products",
+  "before purchase": "products",
+  "משפיעניות וקודי קופון": "returns",
+  "influencers & coupon codes": "returns",
+  "דגשים חשובים": "extra",
+  "important notes": "extra",
+  "שעות פעילות מענה שירות לקוחות וואטסאפ": "extra",
+  "support hours": "extra",
+  חשבוניות: "payment",
+  invoices: "payment",
+  "פלטפורמות ואינטגרציות": "extra",
+  "platforms & integrations": "extra",
+  "שאלות פתוחות": "extra",
+  "open questions": "extra",
 };
 
 function normalizeName(value: string) {
@@ -57,7 +77,7 @@ function groupFromCategoryName(name: string): TopicGroupId | null {
 function groupFromProcessText(detailName: string, question: string, answer: string): TopicGroupId {
   const blob = `${detailName} ${question} ${answer}`;
   if (/משלוח|שליח|מעקב|courier|shipping|delivery/i.test(blob)) return "delivery";
-  if (/פגם|אחריות|warranty|defect/i.test(blob)) return "warranty";
+  if (/ביטול|cancel/i.test(blob)) return "orders";
   return "returns";
 }
 
@@ -115,11 +135,10 @@ export function kbQaSeeds(categories: KnowledgeCategory[]): KbQaSeed[] {
         if (!example && !question && !detailName) continue;
         if (!question && !detailName) continue;
         const forCustomers = item.availableForCustomers !== false;
-        const groupId = legacyProcess
-          ? groupFromProcessText(detailName, question, example)
-          : categoryGroup!;
         seeds.push({
-          groupId,
+          groupId: canonicalGroupId(
+            legacyProcess ? groupFromProcessText(detailName, question, example) : categoryGroup!,
+          ),
           section: legacyProcess ? "process" : "info",
           detailName,
           question,
@@ -129,38 +148,10 @@ export function kbQaSeeds(categories: KnowledgeCategory[]): KbQaSeed[] {
       }
     }
   }
-  if (!seeds.some((item) => item.groupId === "service")) {
-    seeds.push(
-      {
-        groupId: "service",
-        section: "info",
-        detailName: "שעות פעילות",
-        question: "מה שעות פעילות מענה אנושי בוואטסאפ?",
-        example: "",
-        forCustomers: true,
-      },
-      {
-        groupId: "service",
-        section: "info",
-        detailName: "שעות פעילות",
-        question: "איך יוצרים קשר? יש מייל?",
-        example: "",
-        forCustomers: true,
-      },
-      {
-        groupId: "service",
-        section: "info",
-        detailName: "שעות פעילות",
-        question: "תוך כמה זמן חוזרים אליי?",
-        example: "",
-        forCustomers: true,
-      },
-    );
-  }
   return seeds;
 }
 
-const DEFAULT_SEEDS = kbQaSeeds(mraKb as KnowledgeCategory[]);
+const DEFAULT_SEEDS = kbQaSeeds(KB_TEMPLATE);
 
 export function templateQas(categories?: KnowledgeCategory[]): CustomQaItem[] {
   const seeds = categories ? kbQaSeeds(categories) : DEFAULT_SEEDS;
@@ -186,11 +177,16 @@ export function isTemplateQaId(id: string) {
 }
 
 export function withTemplateQas(state: { customQas?: CustomQaItem[] }, importedKb?: boolean) {
-  if (importedKb) return withProcessQas(state.customQas || []);
-  const existing = state.customQas || [];
-  if (existing.some((item) => isTemplateQaId(item.id))) return withProcessQas(existing);
-  if (existing.length > 0) return withProcessQas([...templateQas(), ...existing]);
-  return withProcessQas(templateQas());
+  const remapped = (state.customQas || []).map((item) => ({
+    ...item,
+    groupId: canonicalGroupId(item.groupId),
+  }));
+  if (importedKb) {
+    return withProcessQas(remapped).map((item) => ({ ...item, groupId: canonicalGroupId(item.groupId) }));
+  }
+  if (remapped.some((item) => isTemplateQaId(item.id))) return remapped;
+  if (remapped.length > 0) return [...templateQas(), ...remapped];
+  return templateQas();
 }
 
 export function draftFromKnowledgeBase(
@@ -204,7 +200,7 @@ export function draftFromKnowledgeBase(
     .filter((item) => item.example.trim())
     .map((item, index) => ({
       id: `kb-${item.groupId}-${index + 1}`,
-      groupId: item.groupId,
+      groupId: canonicalGroupId(item.groupId),
       section: item.section,
       question: item.question,
       answer: item.example,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchHtml } from "@/lib/clarity/fetch-page";
-import { highlightPreviewScript, previewStyles } from "@/lib/clarity/preview";
+import { findHighlightSnippet, highlightPreviewScript, previewStyles } from "@/lib/clarity/preview";
 import { ScanError, parsePublicHttpUrl } from "@/lib/clarity/ssrf";
 
 export const maxDuration = 20;
@@ -45,7 +45,9 @@ export async function GET(req: Request) {
     const rawUrl = String(incoming.searchParams.get("url") || "").trim();
     const quote = String(incoming.searchParams.get("quote") || incoming.searchParams.get("excerpt") || "")
       .trim()
-      .slice(0, 240);
+      .slice(0, 400);
+    const excerpt = String(incoming.searchParams.get("excerpt") || "").trim().slice(0, 400);
+    const question = String(incoming.searchParams.get("question") || "").trim().slice(0, 240);
     if (!rawUrl) return new NextResponse("Missing url", { status: 400 });
 
     parsePublicHttpUrl(rawUrl);
@@ -57,7 +59,8 @@ export async function GET(req: Request) {
     const fetched = await fetchHtml(target.toString(), 10000);
     if (!fetched) return new NextResponse("Could not load page", { status: 502 });
 
-    const html = injectPreview(sanitizeHtml(fetched.html), fetched.finalUrl, quote);
+    const snippet = findHighlightSnippet(fetched.html, [quote, excerpt, question]);
+    const html = injectPreview(sanitizeHtml(fetched.html), fetched.finalUrl, snippet || quote);
 
     return new NextResponse(html, {
       headers: {

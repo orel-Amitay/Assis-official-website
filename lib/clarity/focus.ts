@@ -104,11 +104,6 @@ export function autoApproveFound(result: ScanResult, state: ReviewState): Review
         block.claims[0];
       if (!keep) continue;
       qaAnswers[block.def.id] = keep.text;
-      for (const claim of block.claims) {
-        if (claimDecisions[claim.id] === "pending") {
-          claimDecisions[claim.id] = claim.id === keep.id ? "approved" : "rejected";
-        }
-      }
     }
 
     const firstAnswer = Object.values(qaAnswers).find((text) => text.trim()) || topicState.canonicalText;

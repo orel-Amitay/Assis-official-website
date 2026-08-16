@@ -23,7 +23,7 @@ export function isClarityAdmin(session?: Session | null, secret?: string | null)
   const emails = splitList(process.env.CLARITY_ADMIN_EMAILS);
   const usernames = splitList(process.env.CLARITY_ADMIN_USERNAMES);
 
-  if (email && (emails.includes(email) || email.endsWith("@assis.care"))) return true;
+  if (email && (emails.includes(email) || email.endsWith("@assis.care") || email === "nadav@assis.care")) return true;
   if (name && usernames.includes(name)) return true;
   return false;
 }
@@ -80,7 +80,21 @@ export async function listAdminDraftAnswers(): Promise<AdminDraftAnswers[]> {
         savedAt: row.saved_at instanceof Date ? row.saved_at.toISOString() : String(row.saved_at),
         deleted: Boolean(row.deleted_at),
         lang,
-        answers: knowledgeJson(parsed.result, parsed.state, lang),
+        answers: knowledgeJson(parsed.result, parsed.state, lang, { includeNotApplicable: true }),
+        questionnaire: (parsed.state.customQas || []).map((item) => ({
+          id: item.id,
+          groupId: item.groupId,
+          section: item.section,
+          detailName: item.detailName,
+          question: item.question,
+          answer: item.answer,
+          skipped: item.skipped,
+          notApplicable: item.notApplicable,
+          suggestedAnswer: item.suggestedAnswer,
+          verdict: item.verdict,
+          sourceUrl: item.sourceUrl,
+          sourceTitle: item.sourceTitle,
+        })),
       },
     ];
   });

@@ -2,21 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  CHIP_SETS,
-  chipHint,
-  chipLabel,
-  qaChipSet,
-  type ChipSetId,
-} from "@/lib/clarity/chips";
 import { toggleCollectId } from "@/lib/clarity/collect-fields";
 import { COPY, type ClarityLang } from "@/lib/clarity/copy";
+import { shortDashes } from "@/lib/clarity/text";
 import { isProcessTopic } from "@/lib/clarity/focus";
-import { qaBlockDone, qaBlocks, qaPlaceholder, questionLabel, type QaBlock } from "@/lib/clarity/qa";
+import { qaBlockDone, qaBlocks, questionLabel, type QaBlock } from "@/lib/clarity/qa";
 import { isScanRelevantQa, suggestionsForCustomQa } from "@/lib/clarity/suggest";
+import { countQaFilters, customMatchesFilters, type QaFilter } from "@/lib/clarity/qa-filters";
 import { friendlyPageLabel, textFragmentUrl } from "@/lib/clarity/source";
 import { GROUPS } from "@/lib/clarity/topics";
-import { writeGuideForCustomQa, writeGuideForTopic, type WriteGuide } from "@/lib/clarity/write-guide";
 import type {
   ClaimSource,
   CustomQaItem,
@@ -30,30 +24,81 @@ import type {
 import ClarityAuthForm from "./ClarityAuthForm";
 import ConfettiBurst from "./ConfettiBurst";
 import ClarityGuide, { ClarityHelpButton, useClarityGuide } from "./ClarityGuide";
-import { KnowledgeExportMenu } from "./KnowledgeExport";
+import QaFilterBar from "./QaFilterBar";
 import MaterialIcon from "./MaterialIcon";
 
 const pill =
   "inline-flex min-h-11 items-center gap-1 rounded-full border border-black/[0.08] bg-white px-3 text-[13px] font-medium text-zinc-600 transition hover:border-black/[0.14] hover:text-foreground sm:min-h-7 sm:px-2.5 sm:text-[11px]";
 const pillPrimary =
   "inline-flex min-h-11 items-center gap-1 rounded-full bg-assis-blue px-3 text-[13px] font-medium text-white transition hover:bg-assis-blue-deep sm:min-h-7 sm:px-2.5 sm:text-[11px]";
-const pillDark =
-  "inline-flex min-h-11 items-center gap-1 rounded-full bg-assis-blue-light px-3 text-[13px] font-medium text-assis-blue-deep transition hover:bg-[#dceafe] sm:min-h-7 sm:px-2.5 sm:text-[11px]";
 const pillGood =
   "inline-flex min-h-11 items-center gap-1 rounded-full bg-emerald-50 px-3 text-[13px] font-medium text-emerald-800 ring-1 ring-emerald-200/80 transition hover:bg-emerald-100 sm:min-h-7 sm:px-2.5 sm:text-[11px]";
 const pillMuted =
   "inline-flex min-h-11 items-center gap-1 rounded-full bg-zinc-200 px-3 text-[13px] font-medium text-zinc-500 transition hover:bg-zinc-300 sm:min-h-7 sm:px-2.5 sm:text-[11px]";
+const pillWarn =
+  "inline-flex min-h-11 items-center gap-1 rounded-full bg-orange-50 px-3 text-[13px] font-medium text-orange-900 ring-1 ring-orange-200 transition hover:bg-orange-100 sm:min-h-7 sm:px-2.5 sm:text-[11px]";
+const fillCard =
+  "rounded-[1.15rem] bg-orange-50/90 px-4 py-4 ring-1 ring-orange-200";
+const naCard =
+  "rounded-[1.15rem] bg-zinc-100/80 px-4 py-4 ring-1 ring-zinc-200";
+const questionBox =
+  "mt-1 box-border min-h-[5.5rem] w-full min-w-0 max-w-full resize-y break-words rounded-[1.1rem] border border-assis-blue/20 bg-white px-4 py-3 text-start text-[16px] leading-relaxed text-foreground outline-none [overflow-wrap:anywhere] [unicode-bidi:plaintext] focus:border-assis-blue/40 focus:ring-4 focus:ring-assis-blue/10 sm:min-h-[4.5rem] sm:text-[15px]";
+const answerBox =
+  "mt-1 box-border min-h-[12rem] w-full min-w-0 max-w-full resize-y break-words rounded-[1.1rem] border border-assis-blue/20 bg-white px-4 py-3.5 text-start text-[16px] leading-relaxed text-foreground outline-none [overflow-wrap:anywhere] [unicode-bidi:plaintext] focus:border-assis-blue/40 focus:ring-4 focus:ring-assis-blue/10 sm:min-h-[9rem] sm:text-[15px]";
+const answerText =
+  "mt-1 min-h-[3rem] w-full min-w-0 max-w-full break-words whitespace-pre-wrap text-start text-[16px] leading-relaxed text-foreground [overflow-wrap:anywhere] [unicode-bidi:plaintext] sm:text-[14px]";
+
+function sourceForCustomQa(
+  item: CustomQaItem,
+  suggestions: ExtractedClaim[],
+  result: ScanResult,
+): { claim: ExtractedClaim; source: ClaimSource; question?: string } | null {
+  const suggested = suggestions[0];
+  const suggestedSource = suggested?.sources[0];
+  const page =
+    result.pagesScanned.find((entry) => entry.url === item.sourceUrl) ||
+    result.pagesScanned.find((entry) => entry.path === item.sourcePath) ||
+    result.pagesScanned.find((entry) => entry.path === "/" || entry.path === "") ||
+    result.pagesScanned[0];
+  const url = item.sourceUrl || suggestedSource?.url || page?.url || result.storeUrl;
+  if (!url) return null;
+  const source: ClaimSource = {
+    url,
+    pageTitle: item.sourceTitle || suggestedSource?.pageTitle || page?.title || url,
+    path: item.sourcePath || suggestedSource?.path || page?.path || "/",
+    excerpt: suggestedSource?.excerpt || item.sourceQuote || item.answer,
+  };
+  const quote = [suggested?.text, suggestedSource?.excerpt, item.sourceQuote, item.answer]
+    .map((value) => String(value || "").replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join(" ");
+  return {
+    claim: {
+      id: suggested?.id || `qa-src-${item.id}`,
+      topicId: suggested?.topicId || "about",
+      text: quote.slice(0, 400),
+      sources: [source],
+    },
+    source: {
+      ...source,
+      excerpt: suggestedSource?.excerpt || suggested?.text || item.sourceQuote || item.answer,
+    },
+    question: item.question,
+  };
+}
 
 function SourceLinks({
   lang,
   claim,
   source,
+  question,
   onOpenSource,
 }: {
   lang: ClarityLang;
   claim: ExtractedClaim;
   source: ClaimSource;
-  onOpenSource: (value: { claim: ExtractedClaim; source: ClaimSource }) => void;
+  question?: string;
+  onOpenSource: (value: { claim: ExtractedClaim; source: ClaimSource; question?: string }) => void;
 }) {
   const t = COPY[lang];
   const he = lang === "he";
@@ -64,7 +109,7 @@ function SourceLinks({
         <MaterialIcon name="link" className="text-[14px] text-zinc-500" />
         {label}
       </a>
-      <button type="button" onClick={() => onOpenSource({ claim, source })} className={pill}>
+      <button type="button" onClick={() => onOpenSource({ claim, source, question })} className={pill}>
         <MaterialIcon name="my_location" className="text-[14px] text-zinc-500" />
         {t.seeExactPlace}
       </button>
@@ -73,7 +118,124 @@ function SourceLinks({
 }
 
 function customDone(item: CustomQaItem) {
-  return Boolean(item.skipped || item.answer.trim());
+  return Boolean(item.skipped || item.notApplicable || item.verdict === "approved");
+}
+
+function customNeedsFill(item: CustomQaItem) {
+  if (item.skipped || item.notApplicable) return false;
+  return !item.answer.trim() || item.verdict === "rejected";
+}
+
+function qaNeedsFill(block: QaBlock) {
+  if (block.skipped) return false;
+  if (Object.values(block.decisions).some((decision) => decision === "approved")) return false;
+  const openClaim = block.claims.some((claim) => block.decisions[claim.id] !== "rejected");
+  return !block.answer.trim() && !openClaim;
+}
+
+function CategoryScanButton({
+  lang,
+  scanning,
+  disabled,
+  onClick,
+}: {
+  lang: ClarityLang;
+  scanning: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  const t = COPY[lang];
+  return (
+    <button type="button" onClick={onClick} disabled={disabled || scanning} className={pill}>
+      <MaterialIcon name="refresh" className="text-[14px] text-zinc-500" />
+      {scanning ? t.categoryScanning : t.categoryScan}
+    </button>
+  );
+}
+
+function categoryNeedLabel(lang: ClarityLang, done: number, total: number) {
+  const left = Math.max(0, total - done);
+  if (total > 0 && left === 0) {
+    return `${done}/${total} · ${COPY[lang].categoryDoneAll}`;
+  }
+  return COPY[lang].categoryNeed
+    .replace("{done}", String(done))
+    .replace("{total}", String(total))
+    .replace("{left}", String(left));
+}
+
+function CategoryNavButton({
+  lang,
+  title,
+  done,
+  total,
+  selected,
+  compact = false,
+  onClick,
+}: {
+  lang: ClarityLang;
+  title: string;
+  done: number;
+  total: number;
+  selected: boolean;
+  compact?: boolean;
+  onClick: () => void;
+}) {
+  const left = Math.max(0, total - done);
+  const complete = total > 0 && left === 0;
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`shrink-0 rounded-full px-3 py-2.5 text-[13px] font-medium transition sm:px-3.5 sm:py-2 ${
+          selected
+            ? "bg-assis-blue text-white"
+            : complete
+              ? "bg-emerald-50 text-emerald-800"
+              : "bg-white/80 text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        {complete ? "✓ " : ""}
+        {title}
+        {total ? (
+          <span className={`ms-1.5 text-[10px] font-medium ${selected ? "text-white/80" : "text-zinc-400"}`}>
+            {done}/{total}
+          </span>
+        ) : null}
+      </button>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center justify-between gap-2 rounded-2xl px-3 py-2.5 text-start transition ${
+        selected
+          ? "bg-assis-blue-light text-assis-blue-deep shadow-sm"
+          : "text-muted-foreground hover:bg-white/70 hover:text-foreground"
+      }`}
+    >
+      <span className="min-w-0 text-[13px] font-medium leading-snug">{title}</span>
+      {total ? (
+        <span className={`shrink-0 text-[11px] ${selected ? "text-assis-blue-deep/70" : "text-zinc-400"}`}>
+          {complete ? "✓" : `${done}/${total}`}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
+function scrollAppToId(id: string, offset = 120) {
+  const el = document.getElementById(id);
+  const root = document.getElementById("app-scroll");
+  if (!el) return;
+  if (root) {
+    const top = el.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop - offset;
+    root.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    return;
+  }
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function detailGroups(items: CustomQaItem[], fallback: string) {
@@ -103,30 +265,6 @@ function groupProcessBlocks(rows: { topic: TopicReview; block: QaBlock }[]) {
   return order.map((id) => map.get(id)!);
 }
 
-function WriteHint({ lang, guide }: { lang: ClarityLang; guide: WriteGuide | null }) {
-  const t = COPY[lang];
-  if (!guide || (!guide.why && guide.bullets.length === 0 && !guide.example)) return null;
-  return (
-    <div className="rounded-[1.1rem] border border-assis-blue/15 bg-assis-blue-light/60 px-3.5 py-3">
-      <p className="text-[12px] font-semibold text-assis-blue-deep">{t.writeHere}</p>
-      {guide.why ? <p className="mt-1 text-[13px] leading-relaxed text-assis-blue-deep/90">{guide.why}</p> : null}
-      {guide.bullets.length > 0 ? (
-        <ul className="mt-2 list-disc space-y-1 pe-4 ps-5 text-[13px] leading-relaxed text-assis-blue-deep/90">
-          {guide.bullets.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      ) : null}
-      {guide.example ? (
-        <p className="mt-2 text-[12px] leading-relaxed text-zinc-600">
-          <span className="font-semibold text-zinc-500">{t.writeExample}: </span>
-          {guide.example}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
 type SlideItem =
   | {
       kind: "qa";
@@ -144,6 +282,12 @@ type SlideItem =
       section: "info" | "process";
     };
 
+function itemDomId(slide: SlideItem) {
+  return slide.kind === "custom"
+    ? `clarity-item-${slide.item.id}`
+    : `clarity-item-${slide.topic.id}-${slide.block.def.id}`;
+}
+
 export default function DraftScreen({
   lang,
   result,
@@ -153,6 +297,7 @@ export default function DraftScreen({
   onPickQa,
   onRejectQa,
   onQaAnswer,
+  onQaQuestion,
   onSaveEdit,
   onSkipQa,
   onUnskipQa,
@@ -161,7 +306,6 @@ export default function DraftScreen({
   onToggleQaCollect,
   signedIn,
   onSaveDraft,
-  onDownloadDraft,
   onBack,
   onRescan,
   onCategoryScan,
@@ -177,6 +321,7 @@ export default function DraftScreen({
   onPickQa: (topicId: TopicId, qaId: string, claimId: string) => void;
   onRejectQa: (topicId: TopicId, qaId: string, claimId: string) => void;
   onQaAnswer: (topicId: TopicId, qaId: string, text: string) => void;
+  onQaQuestion: (topicId: TopicId, qaId: string, text: string) => void;
   onSaveEdit: (topicId: TopicId, qaId: string, text: string, claimId?: string) => void;
   onSkipQa: (topicId: TopicId, qaId: string) => void;
   onUnskipQa: (topicId: TopicId, qaId: string) => void;
@@ -184,7 +329,6 @@ export default function DraftScreen({
   onUpdateCustomQa: (id: string, patch: Partial<CustomQaItem>) => void;
   onToggleQaCollect: (topicId: TopicId, qaId: string, fieldId: string) => void;
   onSaveDraft: () => void;
-  onDownloadDraft: () => void;
   onBack?: () => void;
   onRescan: () => void;
   onCategoryScan: (groupId: TopicGroupId) => void;
@@ -194,10 +338,11 @@ export default function DraftScreen({
   const t = COPY[lang];
   const he = lang === "he";
   const guide = useClarityGuide();
-  const [savedFlash, setSavedFlash] = useState(false);
-  const [openSource, setOpenSource] = useState<{ claim: ExtractedClaim; source: ClaimSource } | null>(
-    null,
-  );
+  const [openSource, setOpenSource] = useState<{
+    claim: ExtractedClaim;
+    source: ClaimSource;
+    question?: string;
+  } | null>(null);
   const [pendingTrue, setPendingTrue] = useState<{
     topicId: TopicId;
     qaId: string;
@@ -215,13 +360,15 @@ export default function DraftScreen({
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
 
+  const [showNa, setShowNa] = useState(false);
+  const [filters, setFilters] = useState<QaFilter[]>([]);
+  const [pendingScanGroup, setPendingScanGroup] = useState<TopicGroupId | null>(null);
+
   const categories = useMemo(() => {
     return GROUPS.map((group) => {
       const topics = result.topics.filter((topic) => topic.group === group.id);
       const allBlocks = topics.flatMap((topic) =>
-        qaBlocks(topic, state)
-          .filter((block) => !block.skipped)
-          .map((block) => ({ topic, block })),
+        qaBlocks(topic, state).map((block) => ({ topic, block })),
       );
       const infoBlocks = allBlocks.filter(({ topic }) => !isProcessTopic(topic.id));
       const processBlocks = allBlocks.filter(({ topic }) => isProcessTopic(topic.id));
@@ -230,13 +377,8 @@ export default function DraftScreen({
         (item) => item.groupId === group.id && item.section === "process",
       );
       const customAll = (state.customQas || []).filter((item) => item.groupId === group.id);
-      const relevantInfo = customInfo.filter((item) => isScanRelevantQa(item, result));
-      const includeProcess =
-        Boolean(result.importedKb || result.demo) ||
-        relevantInfo.length > 0 ||
-        group.id === "delivery" ||
-        group.id === "returns" ||
-        group.id === "warranty";
+      const relevantInfo = customInfo.filter((item) => isScanRelevantQa(item, result, showNa));
+      const includeProcess = Boolean(result.importedKb || result.demo);
       const visible =
         relevantInfo.length + (includeProcess ? processBlocks.length + customProcess.length : 0);
       const done =
@@ -258,16 +400,17 @@ export default function DraftScreen({
         done,
       };
     });
-  }, [result, state]);
+  }, [result, state, showNa]);
 
   const [activeGroup, setActiveGroup] = useState<TopicGroupId>(
-    () => categories.find((group) => group.visible > 0)?.id || "general",
+    () => categories.find((group) => group.visible > 0)?.id || "brand",
   );
   const active = categories.find((group) => group.id === activeGroup) || categories[0];
   const allSlides = useMemo(() => {
     const items: SlideItem[] = [];
     for (const group of categories) {
       for (const item of [...group.relevantInfo, ...(group.includeProcess ? group.customProcess : [])]) {
+        if (filters.length && !customMatchesFilters(item, filters)) continue;
         items.push({
           kind: "custom",
           key: `custom:${item.id}`,
@@ -276,6 +419,7 @@ export default function DraftScreen({
           section: item.section,
         });
       }
+      if (filters.length) continue;
       for (const row of group.includeProcess ? group.processBlocks : []) {
         items.push({
           kind: "qa",
@@ -288,7 +432,7 @@ export default function DraftScreen({
       }
     }
     return items;
-  }, [categories]);
+  }, [categories, filters]);
   const slideCount = allSlides.length;
   const safeIndex = slideCount === 0 ? 0 : Math.min(qIndex, slideCount - 1);
   const currentSlide = allSlides[safeIndex];
@@ -304,12 +448,41 @@ export default function DraftScreen({
   const processItems = active?.customProcess || [];
   const showProcessTab =
     Boolean(active?.includeProcess) &&
-    active?.id !== "open" &&
+    active?.id !== "extra" &&
     ((processItems.length || 0) > 0 || (active?.processBlocks.length || 0) > 0);
-  const useProcess = sectionTab === "process" && showProcessTab;
-  const hasVisible = useProcess
-    ? processItems.length > 0 || (active?.processBlocks.length || 0) > 0
-    : infoItems.length > 0;
+  const allQaItems = useMemo(
+    () => categories.flatMap((group) => [...group.relevantInfo, ...(group.includeProcess ? group.customProcess : [])]),
+    [categories],
+  );
+  const filterCounts = useMemo(() => countQaFilters(allQaItems), [allQaItems]);
+  const filtering = filters.length > 0;
+  const matchedCategories = useMemo(() => {
+    if (!filtering) return [];
+    return categories
+      .map((group) => ({
+        ...group,
+        matchedItems: [...group.relevantInfo, ...(group.includeProcess ? group.customProcess : [])].filter((item) =>
+          customMatchesFilters(item, filters),
+        ),
+      }))
+      .filter((group) => group.matchedItems.length > 0);
+  }, [categories, filters, filtering]);
+  const groupsToShow = filtering
+    ? matchedCategories
+    : active
+      ? [
+          {
+            ...active,
+            matchedItems: [...active.relevantInfo, ...(active.includeProcess ? active.customProcess : [])],
+          },
+        ]
+      : [];
+  const navCategories = filtering
+    ? matchedCategories
+    : categories.filter((group) => group.visible > 0 || group.id === "extra");
+  const categoryItems = [...infoItems, ...(active?.includeProcess ? processItems : [])];
+  const hasVisible =
+    categoryItems.length > 0 || Boolean(active?.includeProcess && (active.processBlocks.length || 0) > 0);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("clarity-view");
@@ -321,6 +494,10 @@ export default function DraftScreen({
       setQIndex(Math.max(0, slideCount - 1));
     }
   }, [qIndex, slideCount]);
+
+  useEffect(() => {
+    setQIndex(0);
+  }, [filters]);
 
   useEffect(() => {
     if (viewMode !== "slides" || allSlides.length === 0) return;
@@ -398,17 +575,68 @@ export default function DraftScreen({
     const group = categories.find((item) => item.id === id);
     const hasInfo = (group?.relevantInfo.length || 0) > 0;
     const hasProcess =
-      id !== "open" && ((group?.customProcess.length || 0) > 0 || (group?.processBlocks.length || 0) > 0);
+      id !== "extra" && ((group?.customProcess.length || 0) > 0 || (group?.processBlocks.length || 0) > 0);
     const nextTab = !hasInfo && hasProcess ? "process" : "info";
     setSectionTab(nextTab);
     if (viewMode === "slides") {
+      const fill = allSlides.findIndex(
+        (item) => item.groupId === id && (item.kind === "qa" ? qaNeedsFill(item.block) : customNeedsFill(item.item)),
+      );
+      const missing = allSlides.findIndex(
+        (item) =>
+          item.groupId === id &&
+          (item.kind === "qa" ? !qaBlockDone(item.block) : !customDone(item.item)),
+      );
       const next = allSlides.findIndex(
         (item) => item.groupId === id && (nextTab === "process" ? item.section === "process" : item.section !== "process"),
       );
       const fallback = allSlides.findIndex((item) => item.groupId === id);
-      const idx = next >= 0 ? next : fallback;
+      const idx = fill >= 0 ? fill : missing >= 0 ? missing : next >= 0 ? next : fallback;
       if (idx >= 0) setQIndex(idx);
     }
+  }
+
+  function requestGoToGroup(id: TopicGroupId) {
+    if (filtering) {
+      setActiveGroup(id);
+      window.setTimeout(() => scrollAppToId(`clarity-group-${id}`), 40);
+      return;
+    }
+    if (id === (viewMode === "slides" ? currentGroup?.id : active?.id)) return;
+    onSaveDraft();
+    goToGroup(id);
+  }
+
+  function goToNextMissing() {
+    const group = viewMode === "slides" ? currentGroup : active;
+    if (!group) return;
+    const rows = allSlides
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => item.groupId === group.id);
+    const fill = rows.filter(({ item }) =>
+      item.kind === "qa" ? qaNeedsFill(item.block) : customNeedsFill(item.item),
+    );
+    const missing = fill.length
+      ? fill
+      : rows.filter(({ item }) => (item.kind === "qa" ? !qaBlockDone(item.block) : !customDone(item.item)));
+    if (!missing.length) return;
+    const next =
+      viewMode === "slides"
+        ? missing.find((row) => row.index > safeIndex) || missing[0]
+        : missing.find((row) => {
+            const el = document.getElementById(itemDomId(row.item));
+            return !el || el.getBoundingClientRect().top > 140;
+          }) || missing[0];
+    const slide = next.item;
+    if (viewMode === "slides") {
+      setQIndex(next.index);
+      return;
+    }
+    const processSlide = slide.kind === "qa" || (slide.kind === "custom" && slide.section === "process");
+    if (processSlide && showProcessTab) setSectionTab("process");
+    else setSectionTab("info");
+    const id = itemDomId(slide);
+    window.setTimeout(() => scrollAppToId(id), 60);
   }
 
   function goSlide(step: number) {
@@ -457,185 +685,159 @@ export default function DraftScreen({
 
   const sectionInner = (
             <>
-              <div>
-                <h2 className="font-display text-2xl font-semibold tracking-[-0.04em] text-foreground">
-                  {he ? active?.titleHe : active?.title}
-                </h2>
-                <p className="mt-2 text-[13px] leading-relaxed text-zinc-500">
-                  {active?.id === "open" ? t.openBody : useProcess ? t.processesBody : t.draftBody}
-                </p>
-                {showProcessTab ? (
-                  <div className="mt-4 inline-flex w-full rounded-full bg-[#f4f5f7] p-0.5 sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSectionTab("info");
-                        if (viewMode === "slides" && active) {
-                          const idx = allSlides.findIndex((item) => item.groupId === active.id && item.section !== "process");
-                          if (idx >= 0) setQIndex(idx);
-                        }
-                      }}
-                      className={`flex-1 rounded-full px-3.5 py-2.5 text-[13px] font-medium transition sm:flex-none sm:py-1.5 sm:text-[12px] ${
-                        !useProcess ? "bg-white text-foreground shadow-sm" : "text-zinc-500 hover:text-foreground"
-                      }`}
-                    >
-                      {t.infoTab}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSectionTab("process");
-                        if (viewMode === "slides" && active) {
-                          const idx = allSlides.findIndex((item) => item.groupId === active.id && item.section === "process");
-                          if (idx >= 0) setQIndex(idx);
-                        }
-                      }}
-                      className={`flex-1 rounded-full px-3.5 py-2.5 text-[13px] font-medium transition sm:flex-none sm:py-1.5 sm:text-[12px] ${
-                        useProcess ? "bg-white text-foreground shadow-sm" : "text-zinc-500 hover:text-foreground"
-                      }`}
-                    >
-                      {t.processTab}
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-
-              {!useProcess && detailGroups(infoItems, t.addedQuestions).map(({ detailName, items }) => (
-                <section
-                  key={detailName}
-                  className="overflow-hidden rounded-[1.35rem] border border-black/[0.06] bg-white"
-                >
-                  <header className="flex items-center justify-between gap-3 border-b border-black/[0.05] px-4 py-3 sm:px-5">
-                    <h3 className="min-w-0 text-[15px] font-semibold tracking-[-0.02em] text-foreground">
-                      {detailName}
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={() => onAddCustomQa(active!.id, "info", detailName)}
-                      className={pill}
-                    >
-                      <MaterialIcon name="add" className="text-[14px]" />
-                      {t.addQuestion}
-                    </button>
-                  </header>
-                  <div className="space-y-4 px-4 py-4 sm:px-5">
-                    <WriteHint
-                      lang={lang}
-                      guide={
-                        items.some((item) => !customDone(item)) ? writeGuideForCustomQa(items[0], lang) : null
-                      }
-                    />
-                    {items.map((item) => (
-                      <div key={item.id} className="border-t border-black/[0.05] pt-4 first:border-t-0 first:pt-0">
-                        <CustomQaBlock
-                          lang={lang}
-                          item={item}
-                          guide={writeGuideForCustomQa(item, lang)}
-                          suggestions={suggestionsForCustomQa(item, result)}
-                          onChange={(patch) => onUpdateCustomQa(item.id, patch)}
-                          onToggleSkip={() => onUpdateCustomQa(item.id, { skipped: !item.skipped })}
-                          onToggleCollect={(fieldId) =>
-                            onUpdateCustomQa(item.id, {
-                              collectFields: toggleCollectId(item.collectFields, fieldId),
-                            })
-                          }
-                          onOpenSource={setOpenSource}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              ))}
-
-              {useProcess && active ? (
-                <section className="overflow-hidden rounded-[1.35rem] border border-assis-blue/20 bg-[#f6f9ff]">
-                  <header className="flex items-center justify-between gap-3 border-b border-assis-blue/15 px-4 py-3 sm:px-5">
+              {groupsToShow.map((group) => {
+                const items = group.matchedItems;
+                return (
+                  <div key={group.id} id={`clarity-group-${group.id}`} className="space-y-5">
                     <div>
-                      <h3 className="text-[15px] font-semibold tracking-[-0.02em] text-foreground">
-                        {t.processesSection}
-                      </h3>
-                      <p className="mt-1 text-[12px] leading-relaxed text-zinc-500">{t.processesBody}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => onAddCustomQa(active.id, "process", t.processesSection)}
-                      className={pill}
-                    >
-                      <MaterialIcon name="add" className="text-[14px]" />
-                      {t.addQuestion}
-                    </button>
-                  </header>
-                  <div className="space-y-4 px-4 py-4 sm:px-5">
-                    {processItems.map((item) => (
-                        <div key={item.id} className="rounded-[1.2rem] border border-black/[0.06] bg-white px-4 py-4">
-                          <CustomQaBlock
+                      <h2 className="font-display text-2xl font-semibold tracking-[-0.04em] text-foreground">
+                        {he ? group.titleHe : group.title}
+                      </h2>
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                        {group.visible > 0 ? (
+                          <p className="text-[13px] text-zinc-500">
+                            {filtering
+                              ? `${items.length}`
+                              : categoryNeedLabel(lang, group.done, group.visible)}
+                          </p>
+                        ) : (
+                          <span />
+                        )}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {!filtering && group.visible > 0 && group.done < group.visible ? (
+                            <button type="button" onClick={goToNextMissing} className={pillPrimary}>
+                              {t.jumpNextMissing}
+                            </button>
+                          ) : null}
+                          <CategoryScanButton
                             lang={lang}
-                            item={item}
-                            guide={writeGuideForCustomQa(item, lang)}
-                            suggestions={suggestionsForCustomQa(item, result)}
-                            onChange={(patch) => onUpdateCustomQa(item.id, patch)}
-                            onToggleSkip={() => onUpdateCustomQa(item.id, { skipped: !item.skipped })}
-                            onToggleCollect={(fieldId) =>
-                              onUpdateCustomQa(item.id, {
-                                collectFields: toggleCollectId(item.collectFields, fieldId),
-                              })
-                            }
-                            onOpenSource={setOpenSource}
+                            scanning={categoryScanId === group.id}
+                            disabled={Boolean(categoryScanId)}
+                            onClick={() => setPendingScanGroup(group.id)}
                           />
                         </div>
-                      ))}
-                    {groupProcessBlocks(active.processBlocks || []).map(({ topic, blocks }) => (
-                      <div key={topic.id} className="rounded-[1.2rem] border border-black/[0.06] bg-white px-4 py-4">
-                        <h4 className="text-[14px] font-semibold text-foreground">
-                          {he ? topic.titleHe : topic.title}
-                        </h4>
-                        <div className="mt-3">
-                          <WriteHint lang={lang} guide={writeGuideForTopic(topic.id, lang)} />
-                        </div>
-                        <div className="mt-3 space-y-4">
-                          {blocks.map(({ block }) => (
-                            <QuestionBlock
-                              key={`${topic.id}-${block.def.id}`}
-                              lang={lang}
-                              block={block}
-                              onTrue={(claimId) => tryPickQa(topic.id, block.def.id, claimId, block)}
-                              onFalse={(claimId) => onRejectQa(topic.id, block.def.id, claimId)}
-                              onAnswer={(text) => onQaAnswer(topic.id, block.def.id, text)}
-                              onSaveEdit={(text, claimId) => onSaveEdit(topic.id, block.def.id, text, claimId)}
-                              onSkip={() => onSkipQa(topic.id, block.def.id)}
-                              onUnskip={() => onUnskipQa(topic.id, block.def.id)}
-                              onToggleCollect={(fieldId) => onToggleQaCollect(topic.id, block.def.id, fieldId)}
-                              onOpenSource={setOpenSource}
-                            />
+                      </div>
+                      {categoryScanNote && (viewMode === "scroll" || currentGroup?.id === group.id) ? (
+                        <p className="mt-3 rounded-[1.1rem] bg-assis-blue-light px-4 py-2.5 text-[13px] leading-relaxed text-assis-blue-deep">
+                          {categoryScanNote}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    {detailGroups(items, t.addedQuestions).map(({ detailName, items: detailItems }) => (
+                      <section
+                        key={`${group.id}-${detailName}`}
+                        className="min-w-0 overflow-hidden rounded-[1.35rem] border border-black/[0.06] bg-white"
+                      >
+                        <header className="border-b border-black/[0.05] px-4 py-3 sm:px-5">
+                          <h3 className="text-[15px] font-semibold tracking-[-0.02em] text-foreground">
+                            {detailName}
+                          </h3>
+                        </header>
+                        <div className="min-w-0 space-y-4 px-4 py-4 sm:px-5">
+                          {detailItems.map((item) => (
+                            <div
+                              key={item.id}
+                              id={`clarity-item-${item.id}`}
+                              className={
+                                item.skipped || item.notApplicable
+                                  ? naCard
+                                  : customNeedsFill(item)
+                                    ? fillCard
+                                    : "border-t border-black/[0.05] pt-4 first:border-t-0 first:pt-0"
+                              }
+                            >
+                              <CustomQaBlock
+                                lang={lang}
+                                item={item}
+                                result={result}
+                                suggestions={suggestionsForCustomQa(item, result)}
+                                onChange={(patch) => onUpdateCustomQa(item.id, patch)}
+                                onToggleCollect={(fieldId) =>
+                                  onUpdateCustomQa(item.id, {
+                                    collectFields: toggleCollectId(item.collectFields, fieldId),
+                                  })
+                                }
+                                onOpenSource={setOpenSource}
+                              />
+                            </div>
                           ))}
                         </div>
-                      </div>
+                      </section>
                     ))}
+
+                    {!filtering && group.includeProcess
+                      ? groupProcessBlocks(group.processBlocks || []).map(({ topic, blocks }) => (
+                          <section
+                            key={topic.id}
+                            className="min-w-0 overflow-hidden rounded-[1.35rem] border border-black/[0.06] bg-white"
+                          >
+                            <header className="border-b border-black/[0.05] px-4 py-3 sm:px-5">
+                              <h3 className="text-[15px] font-semibold tracking-[-0.02em] text-foreground">
+                                {he ? topic.titleHe : topic.title}
+                              </h3>
+                            </header>
+                            <div className="min-w-0 space-y-4 px-4 py-4 sm:px-5">
+                              {blocks.map(({ block }) => (
+                                <div
+                                  key={`${topic.id}-${block.def.id}`}
+                                  id={`clarity-item-${topic.id}-${block.def.id}`}
+                                  className={
+                                    block.skipped ? naCard : qaNeedsFill(block) ? fillCard : ""
+                                  }
+                                >
+                                  <QuestionBlock
+                                    lang={lang}
+                                    block={block}
+                                    onTrue={(claimId) => tryPickQa(topic.id, block.def.id, claimId, block)}
+                                    onFalse={(claimId) => onRejectQa(topic.id, block.def.id, claimId)}
+                                    onAnswer={(text) => onQaAnswer(topic.id, block.def.id, text)}
+                                    onQuestion={(text) => onQaQuestion(topic.id, block.def.id, text)}
+                                    onSaveEdit={(text, claimId) => onSaveEdit(topic.id, block.def.id, text, claimId)}
+                                    onSkip={() => onSkipQa(topic.id, block.def.id)}
+                                    onUnskip={() => onUnskipQa(topic.id, block.def.id)}
+                                    onToggleCollect={(fieldId) => onToggleQaCollect(topic.id, block.def.id, fieldId)}
+                                    onOpenSource={setOpenSource}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </section>
+                        ))
+                      : null}
+
+                    {!filtering ? (
+                      <button
+                        type="button"
+                        onClick={() => onAddCustomQa(group.id, "info")}
+                        className={pillPrimary}
+                      >
+                        <MaterialIcon name="add" className="text-[14px]" />
+                        {t.addQuestion}
+                      </button>
+                    ) : null}
                   </div>
-                </section>
+                );
+              })}
+
+              {filtering && matchedCategories.length === 0 ? (
+                <p className="text-[14px] text-muted-foreground">{t.filterEmpty}</p>
               ) : null}
 
-              {!hasVisible ? (
-                <p className="text-[14px] text-muted-foreground">{t.emptyCategory}</p>
-              ) : null}
-
-              {active ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    onAddCustomQa(active.id, useProcess ? "process" : "info", useProcess ? t.processesSection : undefined)
-                  }
-                  className={pill}
-                >
-                  <MaterialIcon name="add" className="text-[14px]" />
-                  {t.addQuestion}
-                </button>
+              {!filtering && !hasVisible ? (
+                <p className="text-[14px] text-muted-foreground">
+                  {(state.customQas || []).some(
+                    (item) => item.groupId === active?.id && (item.skipped || item.notApplicable),
+                  )
+                    ? t.emptyOptionalCategory
+                    : t.emptyCategory}
+                </p>
               ) : null}
             </>
   );
 
   return (
-    <main className="mx-auto max-w-6xl overscroll-y-contain px-4 pb-[max(7.5rem,calc(env(safe-area-inset-bottom)+6rem))] pt-2 sm:px-8 sm:pb-28 sm:pt-8">
+    <main className="mx-auto max-w-6xl px-3 pb-[max(8rem,calc(env(safe-area-inset-bottom)+6.5rem))] pt-2 sm:px-8 sm:pb-28 sm:pt-8">
       <ConfettiBurst fire={confetti.fire} big={confetti.big} />
       <div className="mb-2 flex items-center justify-between gap-3">
         {onBack ? (
@@ -669,6 +871,25 @@ export default function DraftScreen({
                 style={{ width: `${progressPct}%` }}
               />
             </div>
+            {cloudSave === "saving" || savedAt || cloudSave === "saved" ? (
+              <p
+                className={`mt-1 truncate text-[10px] font-medium ${
+                  cloudSave === "saving" ? "text-assis-blue" : "text-emerald-700"
+                }`}
+              >
+                {cloudSave === "saving"
+                  ? t.liveSaving
+                  : t.draftSavedAt.replace(
+                      "{time}",
+                      new Date(savedAt as string).toLocaleTimeString(he ? "he-IL" : "en-GB", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }),
+                    )}
+              </p>
+            ) : signedIn ? (
+              <p className="mt-1 truncate text-[10px] font-medium text-emerald-700">{t.liveSaved}</p>
+            ) : null}
           </div>
           <div className="inline-flex shrink-0 rounded-full bg-white p-0.5 ring-1 ring-black/[0.06]">
             <button
@@ -691,15 +912,10 @@ export default function DraftScreen({
             </button>
           </div>
           <ClarityHelpButton label={t.guideCta} onClick={guide.show} />
-          <KnowledgeExportMenu lang={lang} result={result} state={state} onDownloadDraft={onDownloadDraft} />
         </div>
+        <QaFilterBar lang={lang} selected={filters} counts={filterCounts} onChange={setFilters} compact />
       </div>
 
-      {categoryScanNote ? (
-        <p className="mt-3 rounded-[1.1rem] bg-assis-blue-light px-4 py-2.5 text-[13px] leading-relaxed text-assis-blue-deep">
-          {categoryScanNote}
-        </p>
-      ) : null}
       <AnimatePresence>
         {celebrate ? (
           <motion.p
@@ -721,66 +937,49 @@ export default function DraftScreen({
 
       <div className={`mt-3 ${viewMode === "slides" ? "" : "lg:hidden"} -mx-4 px-4 sm:mx-0 sm:mt-4 sm:px-0`}>
         <div className="flex gap-1.5 overflow-x-auto pb-1 pe-6 no-scrollbar">
-          {categories
-            .filter((group) => group.visible > 0 || group.id === "open")
-            .map((group) => (
-            <button
-              key={group.id}
-              type="button"
-              onClick={() => goToGroup(group.id)}
-              className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium transition sm:px-3.5 sm:py-2 sm:text-[13px] ${
-                (viewMode === "slides" ? currentGroup?.id : active?.id) === group.id
-                  ? "bg-assis-blue text-white"
-                  : group.done > 0 && group.done >= group.visible && group.visible > 0
-                    ? "bg-emerald-50 text-emerald-800"
-                    : "bg-white/80 text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {group.done > 0 && group.done >= group.visible && group.visible > 0 ? "✓ " : ""}
-              {he ? group.titleHe : group.title}
-              {group.visible ? ` · ${group.done}/${group.visible}` : ""}
-            </button>
-          ))}
+          {navCategories.map((group) => (
+              <CategoryNavButton
+                key={group.id}
+                lang={lang}
+                title={he ? group.titleHe : group.title}
+                done={group.done}
+                total={group.visible}
+                selected={(viewMode === "slides" ? currentGroup?.id : active?.id) === group.id}
+                compact
+                onClick={() => requestGoToGroup(group.id)}
+              />
+            ))}
         </div>
         {(viewMode === "slides" ? currentGroup : active) ? (
+          <div className="mt-2 flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => onCategoryScan((viewMode === "slides" ? currentGroup : active)!.id)}
-            disabled={Boolean(categoryScanId)}
-            className="mt-2 inline-flex h-8 items-center rounded-full border border-black/[0.06] bg-white px-3 text-[11px] font-semibold text-foreground disabled:opacity-50"
+            onClick={() => setShowNa((value) => !value)}
+            className="inline-flex h-8 items-center rounded-full border border-black/[0.08] bg-white px-3 text-[11px] font-medium text-zinc-600 hover:text-foreground"
           >
-            {categoryScanId
-              ? t.categoryScanning
-              : t.categoryScan}
+            {showNa ? t.hideIrrelevant : t.showIrrelevant}
           </button>
+          </div>
         ) : null}
       </div>
 
       <div className="mt-6 lg:flex lg:items-start lg:gap-8">
-        <nav className={`hidden w-56 shrink-0 ${viewMode === "scroll" ? "lg:block" : ""}`}>
+        <nav className={`hidden w-64 shrink-0 ${viewMode === "scroll" ? "lg:block" : ""}`}>
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
             {t.categoriesNav}
           </p>
           <div className="sticky top-28 mt-3 space-y-1">
-            {categories
-              .filter((group) => group.visible > 0 || group.id === "open")
-              .map((group) => (
-              <button
-                key={group.id}
-                type="button"
-                onClick={() => goToGroup(group.id)}
-                className={`flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-start text-[13px] font-medium transition ${
-                  active?.id === group.id
-                    ? "bg-assis-blue-light text-assis-blue-deep shadow-sm"
-                    : "text-muted-foreground hover:bg-white/70 hover:text-foreground"
-                }`}
-              >
-                <span>{he ? group.titleHe : group.title}</span>
-                <span className={`text-[11px] ${active?.id === group.id ? "text-assis-blue-deep/70" : "text-zinc-400"}`}>
-                  {group.visible ? `${group.done}/${group.visible}` : ""}
-                </span>
-              </button>
-            ))}
+            {navCategories.map((group) => (
+                <CategoryNavButton
+                  key={group.id}
+                  lang={lang}
+                  title={he ? group.titleHe : group.title}
+                  done={group.done}
+                  total={group.visible}
+                  selected={active?.id === group.id}
+                  onClick={() => requestGoToGroup(group.id)}
+                />
+              ))}
           </div>
         </nav>
 
@@ -788,39 +987,85 @@ export default function DraftScreen({
           <article
             onTouchStart={onSlideTouchStart}
             onTouchEnd={onSlideTouchEnd}
-            className="touch-pan-y overflow-hidden rounded-[1.5rem] border border-black/[0.05] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03),0_16px_40px_-24px_rgba(16,24,40,0.18)]"
+            className="touch-pan-y min-w-0 overflow-hidden rounded-[1.5rem] border border-black/[0.05] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03),0_16px_40px_-24px_rgba(16,24,40,0.18)]"
           >
               <div className="hidden overflow-x-auto border-b border-black/[0.04] px-4 py-3 text-[12px] text-zinc-400 sm:block sm:px-5" dir="ltr">
                 {result.storeUrl.replace(/\/$/, "")}
               </div>
               {viewMode === "slides" ? (
-                <div key={currentSlide?.key || "empty"} className="clarity-slide space-y-4 px-4 py-5 sm:px-7 sm:py-8">
+                <div key={currentSlide?.key || "empty"} className="clarity-slide min-w-0 space-y-4 px-4 py-5 sm:px-7 sm:py-8">
                   {currentSlide ? (
                     <>
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-assis-blue/80">
                           {he ? currentGroup?.titleHe : currentGroup?.title}
                         </p>
-                        <h2 className="font-display mt-1 text-[1.25rem] font-semibold tracking-[-0.04em] text-foreground sm:text-[1.45rem]">
+                        {currentGroup ? (
+                          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                            {filtering ? (
+                              <p className="text-[13px] text-zinc-500">{slideCount}</p>
+                            ) : currentGroup.visible > 0 ? (
+                              <p className="text-[13px] text-zinc-500">
+                                {categoryNeedLabel(lang, currentGroup.done, currentGroup.visible)}
+                              </p>
+                            ) : (
+                              <span />
+                            )}
+                            <div className="flex flex-wrap items-center gap-2">
+                              {!filtering && currentGroup.visible > 0 ? (
+                                currentGroup.done < currentGroup.visible ? (
+                                  <button type="button" onClick={goToNextMissing} className={pillPrimary}>
+                                    {t.jumpNextMissing}
+                                  </button>
+                                ) : (
+                                  <p className="text-[12px] font-semibold text-emerald-700">{t.categoryDoneAll}</p>
+                                )
+                              ) : filtering && slideCount > 0 ? (
+                                <button type="button" onClick={goToNextMissing} className={pillPrimary}>
+                                  {t.jumpNextMissing}
+                                </button>
+                              ) : null}
+                              <CategoryScanButton
+                                lang={lang}
+                                scanning={categoryScanId === currentGroup.id}
+                                disabled={Boolean(categoryScanId)}
+                                onClick={() => setPendingScanGroup(currentGroup.id)}
+                              />
+                            </div>
+                          </div>
+                        ) : null}
+                        {categoryScanNote ? (
+                          <p className="mt-3 rounded-[1.1rem] bg-assis-blue-light px-4 py-2.5 text-[13px] leading-relaxed text-assis-blue-deep">
+                            {categoryScanNote}
+                          </p>
+                        ) : null}
+                        <h2 className="font-display mt-3 text-[1.25rem] font-semibold tracking-[-0.04em] text-foreground sm:text-[1.45rem]">
                           {currentSlide.kind === "qa"
                             ? he
                               ? currentSlide.topic.titleHe
                               : currentSlide.topic.title
                             : currentSlide.item.detailName || t.addedQuestions}
                         </h2>
-                        <p className="mt-1.5 text-[12px] leading-relaxed text-zinc-500">
-                          {currentGroup?.id === "open"
-                            ? t.openBody
-                            : currentSlide.kind === "qa"
-                              ? t.processesBody
-                              : t.draftBody}
-                        </p>
                       </div>
+                      <div
+                        className={
+                          currentSlide.kind === "qa"
+                            ? currentSlide.block.skipped
+                              ? naCard
+                              : qaNeedsFill(currentSlide.block)
+                                ? fillCard
+                                : ""
+                            : currentSlide.item.skipped || currentSlide.item.notApplicable
+                              ? naCard
+                              : customNeedsFill(currentSlide.item)
+                                ? fillCard
+                                : ""
+                        }
+                      >
                       {currentSlide.kind === "qa" ? (
                         <QuestionBlock
                           lang={lang}
                           block={currentSlide.block}
-                          guide={writeGuideForTopic(currentSlide.topic.id, lang)}
                           onTrue={(claimId) =>
                             tryPickQa(
                               currentSlide.topic.id,
@@ -831,6 +1076,9 @@ export default function DraftScreen({
                           }
                           onFalse={(claimId) => onRejectQa(currentSlide.topic.id, currentSlide.block.def.id, claimId)}
                           onAnswer={(text) => onQaAnswer(currentSlide.topic.id, currentSlide.block.def.id, text)}
+                          onQuestion={(text) =>
+                            onQaQuestion(currentSlide.topic.id, currentSlide.block.def.id, text)
+                          }
                           onSaveEdit={(text, claimId) =>
                             onSaveEdit(currentSlide.topic.id, currentSlide.block.def.id, text, claimId)
                           }
@@ -845,12 +1093,9 @@ export default function DraftScreen({
                         <CustomQaBlock
                           lang={lang}
                           item={currentSlide.item}
-                          guide={writeGuideForCustomQa(currentSlide.item, lang)}
+                          result={result}
                           suggestions={suggestionsForCustomQa(currentSlide.item, result)}
                           onChange={(patch) => onUpdateCustomQa(currentSlide.item.id, patch)}
-                          onToggleSkip={() =>
-                            onUpdateCustomQa(currentSlide.item.id, { skipped: !currentSlide.item.skipped })
-                          }
                           onToggleCollect={(fieldId) =>
                             onUpdateCustomQa(currentSlide.item.id, {
                               collectFields: toggleCollectId(currentSlide.item.collectFields, fieldId),
@@ -859,7 +1104,8 @@ export default function DraftScreen({
                           onOpenSource={setOpenSource}
                         />
                       )}
-                      {currentGroup ? (
+                      </div>
+                      {currentGroup && !filtering ? (
                         <button
                           type="button"
                           onClick={() =>
@@ -869,7 +1115,7 @@ export default function DraftScreen({
                               currentSlide.kind === "custom" ? currentSlide.item.detailName : undefined,
                             )
                           }
-                          className={pill}
+                          className={pillPrimary}
                         >
                           <MaterialIcon name="add" className="text-[14px]" />
                           {t.addQuestion}
@@ -877,11 +1123,11 @@ export default function DraftScreen({
                       ) : null}
                     </>
                   ) : (
-                    <p className="text-[14px] text-muted-foreground">{t.emptyCategory}</p>
+                    <p className="text-[14px] text-muted-foreground">{filtering ? t.filterEmpty : t.emptyCategory}</p>
                   )}
                 </div>
               ) : (
-                <div className="space-y-5 px-4 py-5 sm:px-7 sm:py-8">{sectionInner}</div>
+                <div className="min-w-0 space-y-5 px-4 py-5 sm:px-7 sm:py-8">{sectionInner}</div>
               )}
           </article>
 
@@ -900,23 +1146,23 @@ export default function DraftScreen({
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-black/[0.04] bg-white/95 px-4 py-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl flex-col gap-1.5">
-          {viewMode === "slides" && slideCount > 0 ? (
+          {viewMode === "slides" ? (
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => goSlide(-1)}
-                disabled={safeIndex <= 0}
+                disabled={safeIndex <= 0 || slideCount === 0}
                 className="inline-flex h-10 flex-1 items-center justify-center rounded-full border border-black/[0.08] bg-white text-[13px] font-semibold text-foreground disabled:opacity-40"
               >
                 {t.prevItem}
               </button>
               <p className="shrink-0 text-[12px] font-medium text-zinc-500">
-                {safeIndex + 1}/{slideCount}
+                {slideCount === 0 ? "0/0" : `${safeIndex + 1}/${slideCount}`}
               </p>
               <button
                 type="button"
                 onClick={() => goSlide(1)}
-                disabled={safeIndex >= slideCount - 1}
+                disabled={safeIndex >= slideCount - 1 || slideCount === 0}
                 className="inline-flex h-10 flex-1 items-center justify-center rounded-full bg-assis-blue text-[13px] font-semibold text-white disabled:opacity-40"
               >
                 {t.nextItem}
@@ -926,44 +1172,21 @@ export default function DraftScreen({
           <div className="flex items-center justify-between gap-3">
             <p
               className={`min-w-0 truncate text-[11px] font-medium ${
-                cloudSave === "error"
-                  ? "text-amber-800"
-                  : cloudSave === "saved"
-                    ? "text-emerald-800"
-                    : "text-zinc-500"
+                cloudSave === "saving" ? "text-assis-blue" : "text-emerald-800"
               }`}
             >
               {cloudSave === "saving"
-                ? t.savingCloud
-                : cloudSave === "saved"
+                ? t.liveSaving
+                : savedAt
                   ? t.draftSavedAt.replace(
                       "{time}",
-                      savedAt
-                        ? new Date(savedAt).toLocaleTimeString(he ? "he-IL" : "en-GB", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "",
+                      new Date(savedAt).toLocaleTimeString(he ? "he-IL" : "en-GB", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }),
                     )
-                  : cloudSave === "error"
-                    ? t.draftSaveCloudError
-                      : signedIn
-                        ? t.draftSavedCloudHint
-                        : t.draftSavedHint}
+                  : t.liveSaved}
             </p>
-            <button
-              type="button"
-              onClick={() => {
-                onSaveDraft();
-                if (!signedIn) {
-                  setSavedFlash(true);
-                  window.setTimeout(() => setSavedFlash(false), 1600);
-                }
-              }}
-              className="shrink-0 text-[12px] font-medium text-zinc-500 underline-offset-2 transition hover:text-foreground hover:underline"
-            >
-              {savedFlash || cloudSave === "saved" ? t.draftSaved : t.saveDraft}
-            </button>
           </div>
         </div>
       </div>
@@ -973,6 +1196,7 @@ export default function DraftScreen({
           lang={lang}
           claim={openSource.claim}
           source={openSource.source}
+          question={openSource.question}
           onClose={() => setOpenSource(null)}
         />
       ) : null}
@@ -1014,6 +1238,47 @@ export default function DraftScreen({
           </div>
         </div>
       ) : null}
+      {pendingScanGroup ? (
+        <div
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-zinc-900/25 p-4 backdrop-blur-[2px] sm:items-center"
+          onClick={() => setPendingScanGroup(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-[1.5rem] border border-white/70 bg-white p-5 shadow-[0_24px_60px_-28px_rgba(16,24,40,0.35)] sm:p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-assis-blue/80">
+              {t.categoryScanConfirmTitle}
+            </p>
+            <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
+              {t.categoryScanConfirmBody.replace(
+                "{group}",
+                he
+                  ? categories.find((group) => group.id === pendingScanGroup)?.titleHe || ""
+                  : categories.find((group) => group.id === pendingScanGroup)?.title || "",
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                const groupId = pendingScanGroup;
+                setPendingScanGroup(null);
+                onCategoryScan(groupId);
+              }}
+              className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-full bg-assis-blue text-[13px] font-semibold text-white transition hover:bg-assis-blue-deep"
+            >
+              {t.categoryScanConfirmCta}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPendingScanGroup(null)}
+              className="mt-1.5 inline-flex h-10 w-full items-center justify-center rounded-full text-[13px] font-medium text-muted-foreground transition hover:text-foreground"
+            >
+              {t.categoryScanConfirmCancel}
+            </button>
+          </div>
+        </div>
+      ) : null}
       <ClarityGuide lang={lang} open={guide.open} onClose={guide.close} />
     </main>
   );
@@ -1025,14 +1290,16 @@ function VerdictBar({
   editing,
   onTrue,
   onFalse,
+  onNa,
   onEdit,
   onSave,
 }: {
   lang: ClarityLang;
-  verdict: "approved" | "rejected" | "pending";
+  verdict: "approved" | "rejected" | "pending" | "na";
   editing: boolean;
   onTrue: () => void;
   onFalse: () => void;
+  onNa: () => void;
   onEdit: () => void;
   onSave: () => void;
 }) {
@@ -1042,8 +1309,11 @@ function VerdictBar({
       <button type="button" onClick={onTrue} className={verdict === "approved" ? pillGood : pill}>
         {t.true}
       </button>
-      <button type="button" onClick={onFalse} className={verdict === "rejected" ? pillMuted : pill}>
+      <button type="button" onClick={onFalse} className={verdict === "rejected" ? pillWarn : pill}>
         {t.notTrue}
+      </button>
+      <button type="button" onClick={onNa} className={verdict === "na" ? pillMuted : pill}>
+        {t.markNa}
       </button>
       {editing ? (
         <button type="button" onClick={onSave} className={pillPrimary}>
@@ -1062,22 +1332,21 @@ function VerdictBar({
 function QuestionBlock({
   lang,
   block,
-  guide = null,
   onTrue,
   onFalse,
-  onAnswer: _onAnswer,
+  onAnswer,
+  onQuestion,
   onSaveEdit,
   onSkip,
   onUnskip,
-  onToggleCollect,
   onOpenSource,
 }: {
   lang: ClarityLang;
   block: QaBlock;
-  guide?: WriteGuide | null;
   onTrue: (claimId: string) => void;
   onFalse: (claimId: string) => void;
   onAnswer: (text: string) => void;
+  onQuestion: (text: string) => void;
   onSaveEdit: (text: string, claimId?: string) => void;
   onSkip: () => void;
   onUnskip: () => void;
@@ -1089,419 +1358,421 @@ function QuestionBlock({
   const skipped = Boolean(block.skipped);
   const claims = block.claims.slice(0, 6);
   const textDir = he ? "rtl" : "ltr";
-  const [editingId, setEditingId] = useState<string | null>(
-    !block.answer && (block.def.alwaysShow || claims.length === 0) ? "answer" : null,
-  );
-  const [draft, setDraft] = useState(block.answer || "");
-  const customAnswer =
-    Boolean(block.answer.trim()) && !claims.some((claim) => claim.text === block.answer);
+  const displayAnswer = block.answer.trim() || claims[0]?.text || "";
+  const questionText = block.question.trim() || questionLabel(block.def, lang);
+  const sourceClaim = claims.find((claim) => claim.text === displayAnswer) || claims[0];
+  const approved = Object.values(block.decisions).some((decision) => decision === "approved");
+  const needsFill = qaNeedsFill(block);
+  const verdict: "approved" | "rejected" | "pending" | "na" = skipped
+    ? "na"
+    : approved
+      ? "approved"
+      : needsFill && !displayAnswer.trim()
+        ? "pending"
+        : Object.values(block.decisions).some((decision) => decision === "rejected") && !approved
+          ? "rejected"
+          : "pending";
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(displayAnswer);
+  const [editingQuestion, setEditingQuestion] = useState(false);
+  const [questionDraft, setQuestionDraft] = useState(questionText);
+  const textSaveTimer = useRef(0);
+  const questionSaveTimer = useRef(0);
 
-  function startEdit(id: string, seed = "") {
-    setEditingId(id);
-    setDraft(block.answer.trim() ? block.answer : seed);
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(textSaveTimer.current);
+      window.clearTimeout(questionSaveTimer.current);
+    };
+  }, []);
+
+  function pushQuestion(text: string, immediate = false) {
+    setQuestionDraft(text);
+    window.clearTimeout(questionSaveTimer.current);
+    const apply = () => onQuestion(text);
+    if (immediate) apply();
+    else questionSaveTimer.current = window.setTimeout(apply, 280);
   }
 
-  function saveEdit(claimId?: string) {
+  function saveQuestion() {
+    window.clearTimeout(questionSaveTimer.current);
+    onQuestion(questionDraft);
+    setEditingQuestion(false);
+  }
+
+  function pushAnswer(text: string, immediate = false) {
+    setDraft(text);
+    window.clearTimeout(textSaveTimer.current);
+    const apply = () => {
+      if (text !== displayAnswer) onAnswer(text);
+    };
+    if (immediate) apply();
+    else textSaveTimer.current = window.setTimeout(apply, 280);
+  }
+
+  function saveEdit() {
+    window.clearTimeout(textSaveTimer.current);
     const text = draft;
-    if (text.trim() || block.answer.trim()) {
-      onSaveEdit(text, claimId);
-      onUnskip();
-    }
-    setEditingId(null);
+    const claim = claims.find((item) => item.text === text);
+    onSaveEdit(text, claim?.id);
+    onUnskip();
+    setEditing(false);
   }
 
   return (
-    <div className={skipped ? "rounded-[1.15rem] bg-[#f6f7f8] px-4 py-4" : ""}>
-      <h3 className="text-start text-[15px] font-medium text-foreground">{questionLabel(block.def, lang)}</h3>
-      {claims[0]?.sources[0] ? (
-        <SourceLinks lang={lang} claim={claims[0]} source={claims[0].sources[0]} onOpenSource={onOpenSource} />
-      ) : null}
-      {!block.answer.trim() ? (
-        <div className="mt-3">
-          <WriteHint lang={lang} guide={guide} />
-        </div>
-      ) : null}
-
-      <div className={skipped ? "opacity-60" : ""}>
-        {claims.map((claim) => {
-          const claimSource = claim.sources[0];
-          const verdict = block.decisions[claim.id] || (block.answer === claim.text ? "approved" : "pending");
-          const editing = editingId === claim.id;
-          return (
-            <div
-              key={claim.id}
-              className={`mt-3 rounded-[1.2rem] border p-4 ${
-                verdict === "approved"
-                  ? "border-emerald-100 bg-emerald-50/50"
-                  : verdict === "rejected"
-                    ? "border-transparent bg-[#f6f7f8]"
-                    : "border-black/[0.08] bg-[#f7f8fa]"
-              }`}
-            >
-              {editing ? (
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  rows={3}
-                  placeholder={qaPlaceholder(block.def, lang) || t.writeProcess}
-                  className="w-full resize-y rounded-[1.1rem] border border-assis-blue/20 bg-white px-3.5 py-3 text-start text-base leading-relaxed text-foreground outline-none focus:border-assis-blue/40 focus:ring-4 focus:ring-assis-blue/10 sm:text-[14px]"
-                  dir={textDir}
-                />
-              ) : (
-                <p
-                  className={`whitespace-pre-wrap text-start text-[14px] leading-relaxed ${
-                    verdict === "rejected" ? "text-zinc-400" : "text-foreground"
-                  }`}
-                  dir={textDir}
-                >
-                  {verdict === "approved" && block.answer.trim() ? block.answer : claim.text}
-                </p>
-              )}
-              {claimSource ? (
-                <SourceLinks lang={lang} claim={claim} source={claimSource} onOpenSource={onOpenSource} />
-              ) : null}
-              <VerdictBar
-                lang={lang}
-                verdict={verdict === "approved" || verdict === "rejected" ? verdict : "pending"}
-                editing={editing}
-                onTrue={() => {
-                  setEditingId(null);
-                  onTrue(claim.id);
-                }}
-                onFalse={() => {
-                  setEditingId(null);
-                  onFalse(claim.id);
-                }}
-                onEdit={() => startEdit(claim.id, claim.text)}
-                onSave={() => saveEdit(claim.id)}
-              />
-            </div>
-          );
-        })}
-
-        {claims.length === 0 || customAnswer || editingId === "answer" ? (
-          <div className="mt-3 rounded-[1.2rem] border border-black/[0.08] bg-white p-4">
-            {claims.length > 0 ? <p className="text-[13px] text-zinc-500">{t.writeYourself}</p> : null}
-            {!block.answer && block.def.alwaysShow && editingId !== "answer" ? (
-              <p className="text-[13px] text-zinc-500">{t.processWriteHint}</p>
-            ) : null}
-            {editingId === "answer" || (!block.answer.trim() && claims.length === 0) ? (
-              <textarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                rows={block.def.alwaysShow ? 4 : 3}
-                placeholder={qaPlaceholder(block.def, lang) || t.writeProcess}
-                className="mt-2 w-full resize-y rounded-[1.1rem] border border-assis-blue/20 bg-[#f7f8fa] px-3.5 py-3 text-start text-base leading-relaxed text-foreground outline-none focus:border-assis-blue/40 focus:ring-4 focus:ring-assis-blue/10 sm:text-[14px]"
-                dir={textDir}
-              />
-            ) : customAnswer ? (
-              <p className="mt-2 whitespace-pre-wrap text-start text-[14px] leading-relaxed text-foreground" dir={textDir}>
-                {block.answer}
-              </p>
-            ) : null}
-            <VerdictBar
-              lang={lang}
-              verdict={skipped ? "rejected" : block.answer.trim() ? "approved" : "pending"}
-              editing={editingId === "answer"}
-              onTrue={() => {
-                setEditingId(null);
-                onUnskip();
-              }}
-              onFalse={onSkip}
-              onEdit={() => startEdit("answer")}
-              onSave={() => saveEdit()}
-            />
-          </div>
+    <article className="min-w-0 max-w-full">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-[11px] font-medium text-zinc-400">{t.questionLabel}</p>
+        {skipped ? (
+          <span className="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-600 ring-1 ring-zinc-200">
+            {t.statusNa}
+          </span>
+        ) : needsFill && verdict === "rejected" ? (
+          <span className="inline-flex rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-900 ring-1 ring-orange-200">
+            {t.fixAnswer}
+          </span>
+        ) : needsFill ? (
+          <span className="inline-flex rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-900 ring-1 ring-orange-200">
+            {t.mustFill}
+          </span>
+        ) : verdict === "pending" ? (
+          <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-900 ring-1 ring-amber-200">
+            {t.needsConfirm}
+          </span>
         ) : null}
-
-        {qaChipSet(block.def) ? (
-          <ChoiceChips
-            lang={lang}
-            set={qaChipSet(block.def)!}
-            selected={block.collectFields}
-            onToggle={onToggleCollect}
-          />
-        ) : null}
+        {editingQuestion ? (
+          <button type="button" onClick={saveQuestion} className={pillPrimary}>
+            {t.saveQuestion}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setQuestionDraft(questionText);
+              setEditingQuestion(true);
+            }}
+            className={pill}
+          >
+            <MaterialIcon name="edit" className="text-[14px] text-zinc-500" />
+            {t.editQuestion}
+          </button>
+        )}
       </div>
-    </div>
+      {editingQuestion ? (
+        <textarea
+          value={questionDraft}
+          onChange={(e) => pushQuestion(e.target.value)}
+          onBlur={() => {
+            window.clearTimeout(questionSaveTimer.current);
+            if (questionDraft !== questionText) onQuestion(questionDraft);
+          }}
+          rows={3}
+          autoFocus
+          placeholder={t.questionPlaceholder}
+          className={questionBox}
+          dir={textDir}
+        />
+      ) : (
+        <h3 className="mt-1 min-w-0 max-w-full break-words text-start text-[15px] font-medium text-foreground [overflow-wrap:anywhere]" dir={textDir}>
+          {questionText}
+        </h3>
+      )}
+      {verdict === "rejected" && !skipped ? (
+        <p className="mt-1 text-[12px] leading-relaxed text-orange-800">{t.fixAnswerHint}</p>
+      ) : needsFill ? (
+        <p className="mt-1 text-[12px] leading-relaxed text-orange-800">{t.mustFillHint}</p>
+      ) : null}
+      <p className="mt-3 text-[11px] font-medium text-zinc-400">{t.answerLabel}</p>
+      {editing ? (
+        <textarea
+          value={draft}
+          onChange={(e) => pushAnswer(e.target.value)}
+          onBlur={() => {
+            window.clearTimeout(textSaveTimer.current);
+            if (draft !== displayAnswer) onAnswer(draft);
+          }}
+          rows={8}
+          autoFocus
+          placeholder={t.answerPlaceholder}
+          className={answerBox}
+          dir={textDir}
+        />
+      ) : (
+        <p className={answerText} dir={textDir}>
+          {shortDashes(displayAnswer) || "-"}
+        </p>
+      )}
+      {sourceClaim?.sources[0] ? (
+        <SourceLinks lang={lang} claim={sourceClaim} source={sourceClaim.sources[0]} onOpenSource={onOpenSource} />
+      ) : null}
+      <VerdictBar
+        lang={lang}
+        verdict={verdict}
+        editing={editing}
+        onTrue={() => {
+          window.clearTimeout(textSaveTimer.current);
+          const text = editing ? draft : displayAnswer;
+          if (!text.trim()) {
+            setDraft(text);
+            setEditing(true);
+            return;
+          }
+          if (editing && text !== displayAnswer) onAnswer(text);
+          const claim = claims.find((item) => item.text === text) || claims[0];
+          if (claim) onTrue(claim.id);
+          else onSaveEdit(text);
+          onUnskip();
+          setEditing(false);
+        }}
+        onFalse={() => {
+          window.clearTimeout(textSaveTimer.current);
+          if (editing && draft !== displayAnswer) onAnswer(draft);
+          if (sourceClaim) onFalse(sourceClaim.id);
+          onUnskip();
+          setEditing(true);
+        }}
+        onNa={() => {
+          window.clearTimeout(textSaveTimer.current);
+          setEditing(false);
+          onSkip();
+        }}
+        onEdit={() => {
+          setDraft(displayAnswer);
+          setEditing(true);
+        }}
+        onSave={saveEdit}
+      />
+    </article>
   );
 }
 
 function CustomQaBlock({
   lang,
   item,
-  guide = null,
+  result,
   suggestions,
   onChange,
-  onToggleSkip,
-  onToggleCollect,
   onOpenSource,
 }: {
   lang: ClarityLang;
   item: CustomQaItem;
-  guide?: WriteGuide | null;
+  result: ScanResult;
   suggestions: ExtractedClaim[];
   onChange: (patch: Partial<CustomQaItem>) => void;
-  onToggleSkip: () => void;
   onToggleCollect: (fieldId: string) => void;
-  onOpenSource: (value: { claim: ExtractedClaim; source: ClaimSource }) => void;
+  onOpenSource: (value: { claim: ExtractedClaim; source: ClaimSource; question?: string }) => void;
 }) {
   const t = COPY[lang];
   const he = lang === "he";
-  const skipped = Boolean(item.skipped);
   const textDir = he ? "rtl" : "ltr";
-  const detailName = item.detailName?.trim() || "";
-  const questionText = item.question.trim() && item.question.trim() !== detailName ? item.question.trim() : "";
-  const [showQuestion, setShowQuestion] = useState(!questionText && !item.answer.trim());
-  const [editing, setEditing] = useState(!item.answer.trim());
-  const [rejectedIds, setRejectedIds] = useState<Set<string>>(new Set());
+  const questionText = item.question.trim() || item.detailName?.trim() || "";
+  const confirmed = Boolean(item.verdict === "approved" || item.skipped || item.notApplicable);
+  const needsFill = customNeedsFill(item);
+  const verdict: "approved" | "rejected" | "pending" | "na" =
+    item.skipped || item.notApplicable
+      ? "na"
+      : item.verdict === "approved"
+        ? "approved"
+        : item.verdict === "rejected"
+          ? "rejected"
+          : "pending";
+  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.answer);
-  const forCustomers = item.forCustomers !== false;
-  const verdict = skipped ? "rejected" : item.verdict === "approved" ? "approved" : item.answer.trim() ? "pending" : "pending";
-  const visibleSuggestions = suggestions.filter((claim) => !rejectedIds.has(claim.id));
-  const answerMatchesSuggestion = visibleSuggestions.some((claim) => claim.text === item.answer.trim());
-  const answerClaim =
-    suggestions.find((claim) => claim.text === item.answer.trim() || claim.text === item.suggestedAnswer) || null;
-  const answerSource = answerClaim?.sources[0] || null;
-  const primaryClaim = answerClaim || visibleSuggestions[0] || null;
-  const primarySource = answerSource || primaryClaim?.sources[0] || null;
-  const showAnswerCard = Boolean(item.answer.trim() || editing || item.suggestedAnswer) && !answerMatchesSuggestion;
-  const scanHint = Boolean(item.suggestedAnswer && item.answer.trim() === item.suggestedAnswer.trim());
+  const [editingQuestion, setEditingQuestion] = useState(!item.question.trim());
+  const [questionDraft, setQuestionDraft] = useState(item.question || questionText);
+  const textSaveTimer = useRef(0);
+  const questionSaveTimer = useRef(0);
+  const located = sourceForCustomQa(item, suggestions, result);
+
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(textSaveTimer.current);
+      window.clearTimeout(questionSaveTimer.current);
+    };
+  }, []);
+
+  function pushQuestion(text: string, immediate = false) {
+    setQuestionDraft(text);
+    window.clearTimeout(questionSaveTimer.current);
+    const apply = () => onChange({ question: text });
+    if (immediate) apply();
+    else questionSaveTimer.current = window.setTimeout(apply, 280);
+  }
+
+  function saveQuestion() {
+    window.clearTimeout(questionSaveTimer.current);
+    onChange({ question: questionDraft });
+    setEditingQuestion(false);
+  }
+
+  function pushAnswer(text: string, patch: Partial<CustomQaItem> = {}, immediate = false) {
+    setDraft(text);
+    window.clearTimeout(textSaveTimer.current);
+    const apply = () => {
+      onChange({
+        answer: text,
+        skipped: false,
+        notApplicable: false,
+        verdict: text.trim() ? item.verdict || "pending" : "pending",
+        ...patch,
+      });
+    };
+    if (immediate) apply();
+    else textSaveTimer.current = window.setTimeout(apply, 280);
+  }
 
   function saveEdit() {
-    onChange({ answer: draft, skipped: false, verdict: draft.trim() ? "approved" : item.verdict });
+    window.clearTimeout(textSaveTimer.current);
+    onChange({
+      answer: draft,
+      skipped: false,
+      notApplicable: false,
+      verdict: draft.trim() ? "approved" : "pending",
+    });
     setEditing(false);
   }
 
   return (
-    <div className={skipped ? "rounded-[1.15rem] bg-[#f6f7f8] px-4 py-4" : ""}>
-      {questionText && !showQuestion ? (
-        <h3 className="text-start text-[15px] font-medium text-foreground" dir={textDir}>
-          {questionText}
-        </h3>
-      ) : showQuestion ? (
-          <input
-            value={item.question}
-            onChange={(e) => onChange({ question: e.target.value, skipped: false })}
-            placeholder={t.questionPlaceholder}
-            className="w-full rounded-[0.9rem] border border-black/[0.08] bg-[#f7f8fa] px-3 py-2.5 text-start text-base font-medium text-foreground outline-none focus:border-assis-blue/25 focus:ring-4 focus:ring-assis-blue/10 sm:text-[14px]"
-            dir={textDir}
-          />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setShowQuestion(true)}
-          className="text-[12px] font-medium text-assis-blue hover:text-assis-blue-deep"
-        >
-          + {t.optionalQuestion}
-        </button>
-      )}
-
-      {primaryClaim && primarySource ? (
-        <SourceLinks lang={lang} claim={primaryClaim} source={primarySource} onOpenSource={onOpenSource} />
-      ) : null}
-
-      {item.section === "process" && !item.answer.trim() ? (
-        <div className="mt-3">
-          <WriteHint lang={lang} guide={guide} />
-        </div>
-      ) : null}
-
-      <div className={skipped ? "opacity-60" : ""}>
-        {visibleSuggestions.length > 0 ? (
-          <p className="mt-3 text-[12px] font-medium text-zinc-500">{t.foundOnSite}</p>
-        ) : scanHint ? (
-          <p className="mt-3 text-[12px] font-medium text-zinc-500">{t.scanSuggestion}</p>
+    <article className="min-w-0 max-w-full">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-[11px] font-medium text-zinc-400">{t.questionLabel}</p>
+        {item.skipped || item.notApplicable ? (
+          <span className="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-600 ring-1 ring-zinc-200">
+            {t.statusNa}
+          </span>
+        ) : item.verdict === "rejected" ? (
+          <span className="inline-flex rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-900 ring-1 ring-orange-200">
+            {t.fixAnswer}
+          </span>
+        ) : needsFill ? (
+          <span className="inline-flex rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-900 ring-1 ring-orange-200">
+            {t.mustFill}
+          </span>
+        ) : !confirmed ? (
+          <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-900 ring-1 ring-amber-200">
+            {t.needsConfirm}
+          </span>
         ) : null}
-
-        {visibleSuggestions.map((claim) => {
-          const claimSource = claim.sources[0];
-          const approved = item.answer.trim() === claim.text && item.verdict === "approved";
-          return (
-            <div
-              key={claim.id}
-              className={`mt-3 rounded-[1.2rem] border p-4 ${
-                approved
-                  ? "border-emerald-100 bg-emerald-50/50"
-                  : "border-black/[0.08] bg-[#f7f8fa]"
-              }`}
-            >
-              <p className="whitespace-pre-wrap text-start text-[14px] leading-relaxed text-foreground" dir={textDir}>
-                {claim.text}
-              </p>
-              {claimSource ? (
-                <SourceLinks lang={lang} claim={claim} source={claimSource} onOpenSource={onOpenSource} />
-              ) : null}
-              <VerdictBar
-                lang={lang}
-                verdict={approved ? "approved" : "pending"}
-                editing={false}
-                onTrue={() =>
-                  onChange({ answer: claim.text, suggestedAnswer: item.suggestedAnswer || claim.text, skipped: false, verdict: "approved" })
-                }
-                onFalse={() => {
-                  setRejectedIds((prev) => new Set(prev).add(claim.id));
-                  if (item.answer.trim() === claim.text) {
-                    onChange({ answer: "", verdict: "pending", skipped: false });
-                  }
-                }}
-                onEdit={() => {
-                  setDraft(claim.text);
-                  setEditing(true);
-                  onChange({ answer: claim.text, skipped: false, verdict: "pending" });
-                }}
-                onSave={() => undefined}
-              />
-            </div>
-          );
-        })}
-
-        {showAnswerCard || visibleSuggestions.length === 0 ? (
-          <div className="mt-3 rounded-[1.2rem] border border-black/[0.08] bg-white p-4">
-            {visibleSuggestions.length > 0 ? <p className="text-[13px] text-zinc-500">{t.writeYourself}</p> : null}
-            {scanHint && visibleSuggestions.length === 0 ? (
-              <p className="mb-2 text-[12px] font-medium text-zinc-500">{t.scanSuggestion}</p>
-            ) : null}
-            {editing || !item.answer.trim() ? (
-              <textarea
-                value={editing ? draft : item.answer}
-                onChange={(e) => {
-                  setDraft(e.target.value);
-                  if (!editing) setEditing(true);
-                  onChange({ answer: e.target.value, skipped: false, verdict: "pending" });
-                }}
-                rows={4}
-                placeholder={t.answerPlaceholder}
-                className="w-full resize-y rounded-[1.1rem] border border-assis-blue/20 bg-[#f7f8fa] px-3.5 py-3 text-start text-base leading-relaxed text-foreground outline-none focus:border-assis-blue/40 focus:ring-4 focus:ring-assis-blue/10 sm:text-[14px]"
-                dir={textDir}
-              />
-            ) : (
-              <p className="whitespace-pre-wrap text-start text-[14px] leading-relaxed text-foreground" dir={textDir}>
-                {item.answer}
-              </p>
-            )}
-            {answerClaim && answerSource ? (
-              <SourceLinks lang={lang} claim={answerClaim} source={answerSource} onOpenSource={onOpenSource} />
-            ) : null}
-            <VerdictBar
-              lang={lang}
-              verdict={verdict === "rejected" || verdict === "approved" ? verdict : "pending"}
-              editing={editing}
-              onTrue={() => {
-                if (skipped) onToggleSkip();
-                onChange({ verdict: "approved", skipped: false, answer: (editing ? draft : item.answer).trim() || item.answer });
-                setEditing(false);
-              }}
-              onFalse={() => {
-                if (answerClaim) setRejectedIds((prev) => new Set(prev).add(answerClaim.id));
-                onChange({
-                  answer: "",
-                  suggestedAnswer: "",
-                  verdict: "pending",
-                  skipped: false,
-                });
-                setDraft("");
-                setEditing(true);
-              }}
-              onEdit={() => {
-                if (skipped) onToggleSkip();
-                setDraft(item.answer);
-                setEditing(true);
-              }}
-              onSave={saveEdit}
-            />
-          </div>
-        ) : null}
-
-        {item.section === "process" ? (
-          <ChoiceChips lang={lang} set="collect" selected={item.collectFields || []} onToggle={onToggleCollect} />
-        ) : null}
-      </div>
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        <button
-          type="button"
-          onClick={() => onChange({ forCustomers: true, skipped: false })}
-          className={forCustomers ? pillDark : pill}
-        >
-          {t.forCustomers}
-        </button>
-        <button
-          type="button"
-          onClick={() => onChange({ forCustomers: false, skipped: false })}
-          className={!forCustomers ? pillDark : pill}
-        >
-          {t.agentOnly}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ChoiceChips({
-  lang,
-  set,
-  selected,
-  onToggle,
-}: {
-  lang: ClarityLang;
-  set: ChipSetId;
-  selected: string[];
-  onToggle: (id: string) => void;
-}) {
-  const t = COPY[lang];
-  const he = lang === "he";
-  const [other, setOther] = useState("");
-  const fields = CHIP_SETS[set];
-  const customIds = selected.filter((id) => id.startsWith("custom:"));
-
-  return (
-    <div className="mt-3">
-      <p className="text-start text-[12px] font-medium text-zinc-500">{chipHint(set, lang)}</p>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {fields.map((field) => {
-          const on = selected.includes(field.id);
-          return (
-            <button key={field.id} type="button" onClick={() => onToggle(field.id)} className={on ? pillDark : pill}>
-              {he ? field.he : field.en}
-            </button>
-          );
-        })}
-        {customIds.map((id) => (
-          <button key={id} type="button" onClick={() => onToggle(id)} className={pillDark}>
-            {chipLabel(set, id, lang)}
+        {editingQuestion ? (
+          <button type="button" onClick={saveQuestion} className={pillPrimary}>
+            {t.saveQuestion}
           </button>
-        ))}
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setQuestionDraft(item.question || questionText);
+              setEditingQuestion(true);
+            }}
+            className={pill}
+          >
+            <MaterialIcon name="edit" className="text-[14px] text-zinc-500" />
+            {t.editQuestion}
+          </button>
+        )}
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <input
-          value={other}
-          onChange={(e) => setOther(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key !== "Enter") return;
-            e.preventDefault();
-            const label = other.trim();
-            if (!label) return;
-            onToggle(`custom:${label}`);
-            setOther("");
+      {editingQuestion ? (
+        <textarea
+          value={questionDraft}
+          onChange={(e) => pushQuestion(e.target.value)}
+          onBlur={() => {
+            window.clearTimeout(questionSaveTimer.current);
+            if (questionDraft !== item.question) onChange({ question: questionDraft });
           }}
-          placeholder={t.collectOther}
-          className="h-11 min-w-[8rem] flex-1 rounded-full border border-black/[0.06] bg-white px-3 text-base text-foreground outline-none focus:border-assis-blue/25 sm:h-7 sm:text-[11px]"
-          dir={he ? "rtl" : "ltr"}
+          rows={3}
+          autoFocus
+          placeholder={t.questionPlaceholder}
+          className={questionBox}
+          dir={textDir}
         />
-        <button
-          type="button"
-          onClick={() => {
-            const label = other.trim();
-            if (!label) return;
-            onToggle(`custom:${label}`);
-            setOther("");
+      ) : (
+        <h3 className="mt-1 min-w-0 max-w-full break-words text-start text-[15px] font-medium text-foreground [overflow-wrap:anywhere]" dir={textDir}>
+          {questionText || t.questionPlaceholder}
+        </h3>
+      )}
+      {item.verdict === "rejected" && !item.skipped && !item.notApplicable ? (
+        <p className="mt-1 text-[12px] leading-relaxed text-orange-800">{t.fixAnswerHint}</p>
+      ) : needsFill ? (
+        <p className="mt-1 text-[12px] leading-relaxed text-orange-800">{t.mustFillHint}</p>
+      ) : null}
+      <p className="mt-3 text-[11px] font-medium text-zinc-400">{t.answerLabel}</p>
+      {editing ? (
+        <textarea
+          value={draft}
+          onChange={(e) => pushAnswer(e.target.value)}
+          onBlur={() => {
+            window.clearTimeout(textSaveTimer.current);
+            if (draft !== item.answer) {
+              onChange({
+                answer: draft,
+                skipped: false,
+                notApplicable: false,
+                verdict: draft.trim() ? item.verdict || "pending" : "pending",
+              });
+            }
           }}
-          className={pill}
-        >
-          {t.collectOtherAdd}
-        </button>
-      </div>
-    </div>
+          rows={8}
+          autoFocus
+          placeholder={t.answerPlaceholder}
+          className={answerBox}
+          dir={textDir}
+        />
+      ) : (
+        <p className={answerText} dir={textDir}>
+          {shortDashes(item.answer) || "-"}
+        </p>
+      )}
+      {located && (item.answer.trim() || item.suggestedAnswer?.trim() || item.sourceUrl) ? (
+        <SourceLinks
+          lang={lang}
+          claim={located.claim}
+          source={located.source}
+          question={item.question}
+          onOpenSource={onOpenSource}
+        />
+      ) : null}
+      <VerdictBar
+        lang={lang}
+        verdict={verdict}
+        editing={editing}
+        onTrue={() => {
+          window.clearTimeout(textSaveTimer.current);
+          const text = editing ? draft : item.answer;
+          if (!text.trim()) {
+            setDraft(text);
+            setEditing(true);
+            return;
+          }
+          onChange({
+            answer: text,
+            skipped: false,
+            notApplicable: false,
+            verdict: "approved",
+          });
+          setEditing(false);
+        }}
+        onFalse={() => {
+          window.clearTimeout(textSaveTimer.current);
+          onChange({
+            answer: editing ? draft : item.answer,
+            skipped: false,
+            notApplicable: false,
+            verdict: "rejected",
+          });
+          setEditing(true);
+        }}
+        onNa={() => {
+          window.clearTimeout(textSaveTimer.current);
+          setEditing(false);
+          onChange({ skipped: true, notApplicable: true, verdict: "rejected" });
+        }}
+        onEdit={() => {
+          setDraft(item.answer);
+          setEditing(true);
+        }}
+        onSave={saveEdit}
+      />
+    </article>
   );
 }
 
@@ -1521,11 +1792,13 @@ function SourceSheet({
   lang,
   claim,
   source,
+  question,
   onClose,
 }: {
   lang: ClarityLang;
   claim: ExtractedClaim;
   source: ClaimSource;
+  question?: string;
   onClose: () => void;
 }) {
   const t = COPY[lang];
@@ -1535,7 +1808,7 @@ function SourceSheet({
   const excerpt = source.excerpt || claim.text;
   const parts = excerpt.split(claim.text);
   const exactUrl = textFragmentUrl(source.url, claim.text);
-  const previewUrl = `/api/clarity/preview?url=${encodeURIComponent(source.url)}&quote=${encodeURIComponent(claim.text)}&excerpt=${encodeURIComponent(excerpt.slice(0, 240))}`;
+  const previewUrl = `/api/clarity/preview?url=${encodeURIComponent(source.url)}&quote=${encodeURIComponent(claim.text)}&excerpt=${encodeURIComponent(excerpt.slice(0, 400))}&question=${encodeURIComponent((question || "").slice(0, 240))}`;
   let path = source.path;
   try {
     path = decodeURIComponent(source.path);

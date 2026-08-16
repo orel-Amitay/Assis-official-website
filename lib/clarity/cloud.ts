@@ -144,7 +144,12 @@ export async function patchClarityDraftState(
   const rows = (await db`
     UPDATE clarity_drafts
     SET
-      payload = jsonb_set(payload, '{state}', ${stateJson}::jsonb, true),
+      payload = jsonb_set(
+        jsonb_set(payload, '{state}', ${stateJson}::jsonb, true),
+        '{savedAt}',
+        to_jsonb(${savedAt}::text),
+        true
+      ),
       lang = ${lang},
       saved_at = ${savedAt}::timestamptz
     WHERE user_id = ${userId} AND id = ${id}

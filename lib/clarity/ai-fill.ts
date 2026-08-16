@@ -1,7 +1,6 @@
-import { isReviewPage, isUsableStoreFact } from "./extract";
-import { isProcessTopic } from "./focus";
+import { isReviewPage, isUsableKbAnswer } from "./extract";
 import { templateExample, templateQas } from "./import-kb";
-import { questionsForTopic, questionLabel } from "./qa";
+import { GROUP_PAGE_HINTS } from "./kb-template";
 import { GROUPS, TOPICS } from "./topics";
 import type { ClarityLang } from "./copy";
 import type { PageSnapshot } from "./extract";
@@ -12,6 +11,8 @@ export type CategorySuggestion = {
   qaId: string;
   answer: string;
   missing: boolean;
+  notApplicable?: boolean;
+  sourceUrl?: string;
 };
 
 export type OpenQaSuggestion = {
@@ -32,17 +33,113 @@ function openaiKey() {
   return String(process.env.OPENAI_API_KEY || "").trim();
 }
 
-function pageBundle(pages: PageSnapshot[]) {
-  return pages
-    .filter((page) => !isReviewPage(page.path, page.title))
-    .slice(0, 12)
-    .map((page) => `URL: ${page.path || page.url}\n${page.text.slice(0, 3500)}`)
-    .join("\n\n---\n\n")
-    .slice(0, 28000);
+const FILL_STOP = new Set([
+  "את",
+  "של",
+  "על",
+  "עם",
+  "או",
+  "לא",
+  "גם",
+  "זה",
+  "זו",
+  "הוא",
+  "היא",
+  "יש",
+  "אין",
+  "כל",
+  "מה",
+  "איך",
+  "אם",
+  "כי",
+  "האם",
+  "כיצד",
+  "נא",
+  "the",
+  "and",
+  "for",
+  "from",
+  "with",
+  "your",
+  "you",
+  "our",
+  "are",
+  "is",
+  "to",
+  "in",
+  "of",
+  "a",
+  "if",
+  "do",
+  "does",
+  "can",
+  "how",
+  "what",
+]);
+
+function questionNeedles(questions: Array<{ question: string }>) {
+  const words = questions.flatMap((item) =>
+    item.question
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .split(/\s+/)
+      .filter((word) => word.length >= 4 && !FILL_STOP.has(word)),
+  );
+  return [...new Set(words)].slice(0, 50);
 }
 
-function questionList(groupId: TopicGroupId, lang: ClarityLang) {
-  const template = templateQas()
+function packPageText(text: string, needles: string[], maxChars: number) {
+  if (text.length <= maxChars) return text;
+  const chunks: string[] = [];
+  const head = Math.min(2400, Math.floor(maxChars * 0.35));
+  const tail = Math.min(2400, Math.floor(maxChars * 0.3));
+  chunks.push(text.slice(0, head));
+  const lower = text.toLowerCase();
+  for (const needle of needles) {
+    let from = 0;
+    let hits = 0;
+    while (hits < 3) {
+      const idx = lower.indexOf(needle, from);
+      if (idx < 0) break;
+      const start = Math.max(0, idx - 500);
+      const end = Math.min(text.length, idx + needle.length + 900);
+      chunks.push(text.slice(start, end));
+      from = idx + needle.length;
+      hits += 1;
+    }
+  }
+  chunks.push(text.slice(Math.max(0, text.length - tail)));
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const chunk of chunks) {
+    const key = chunk.slice(0, 80);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(chunk);
+  }
+  return unique.join("\n…\n").slice(0, maxChars);
+}
+
+function pageBundle(pages: PageSnapshot[], questions: Array<{ question: string }> = []) {
+  const needles = questionNeedles(questions);
+  let budget = 72000;
+  const parts: string[] = [];
+  for (const page of pages.filter((item) => !isReviewPage(item.path, item.title)).slice(0, 28)) {
+    const highValue = /\/policies\/|\/pages\/|faq|משלוח|החזר|shipping|return|about|אודות/i.test(
+      `${page.path} ${page.title}`,
+    );
+    const cap = Math.min(highValue ? 8500 : 5200, budget);
+    if (cap < 1200) break;
+    const body = packPageText(page.text, needles, cap);
+    parts.push(`URL: ${page.url}\nTITLE: ${page.title}\n${body}`);
+    budget -= body.length + 40;
+    if (budget < 3500) break;
+  }
+  return parts.join("\n\n---\n\n");
+}
+
+function questionList(groupId: TopicGroupId, _lang: ClarityLang) {
+  return templateQas()
     .filter((item) => item.groupId === groupId)
     .map((item) => ({
       topicId: "about" as TopicId,
@@ -53,15 +150,6 @@ function questionList(groupId: TopicGroupId, lang: ClarityLang) {
           : item.question || item.detailName || "",
       example: templateExample(item.id),
     }));
-  const process = TOPICS.filter((topic) => topic.group === groupId && isProcessTopic(topic.id)).flatMap((topic) =>
-    questionsForTopic(topic.id).map((def) => ({
-      topicId: topic.id,
-      qaId: def.id,
-      question: questionLabel(def, lang),
-      example: "",
-    })),
-  );
-  return [...template, ...process];
 }
 
 function parseSuggestions(raw: string, allowed: Set<string>): CategorySuggestion[] {
@@ -75,6 +163,9 @@ function parseSuggestions(raw: string, allowed: Set<string>): CategorySuggestion
       topicId?: string;
       answer?: string;
       missing?: boolean;
+      notApplicable?: boolean;
+      sourceUrl?: string;
+      source?: string;
     }>;
     if (!Array.isArray(parsed)) return [];
     return parsed.flatMap((item) => {
@@ -82,13 +173,16 @@ function parseSuggestions(raw: string, allowed: Set<string>): CategorySuggestion
       const topicId = String(item.topicId || qaId.split(".")[0] || "") as TopicId;
       if (!allowed.has(qaId)) return [];
       const answer = String(item.answer || "").trim();
-      if (answer && !isUsableStoreFact(answer)) return [];
+      const notApplicable = Boolean(item.notApplicable);
+      if (answer && !notApplicable && !isUsableKbAnswer(answer)) return [];
       return [
         {
           topicId,
           qaId,
           answer,
-          missing: Boolean(item.missing) || !answer,
+          missing: Boolean(item.missing) || (!answer && !notApplicable),
+          notApplicable,
+          sourceUrl: String(item.sourceUrl || item.source || "").trim() || undefined,
         },
       ];
     });
@@ -110,7 +204,7 @@ async function runGemini(prompt: string) {
         headers: { "Content-Type": "application/json", "x-goog-api-key": key },
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+          generationConfig: { temperature: 0.15, maxOutputTokens: 8192 },
         }),
       },
     );
@@ -153,90 +247,175 @@ export async function aiFillCategory(input: {
   lang: ClarityLang;
 }): Promise<CategorySuggestion[]> {
   const questions = questionList(input.groupId, input.lang);
-  if (questions.length === 0 || input.pages.length === 0) return [];
+  if (questions.length === 0) return [];
   const focused = pagesForGroup(input.groupId, input.pages);
   if (focused.length === 0) return [];
   if (!geminiKey() && !openaiKey()) return [];
 
   const he = input.lang === "he";
-  const prompt = [
-    he
-      ? `אתה מחלץ עובדות מדויקות מחנות אינטרנט לקטגוריה אחת בלבד: ${input.groupTitle}.`
-      : `Extract accurate store facts for one category only: ${input.groupTitle}.`,
-    he
-      ? "אל תשתמש בביקורות לקוחות, תגובות, המלצות, דירוגים או ציטוטים אישיים."
-      : "Do not use customer reviews, comments, testimonials, ratings, or personal quotes.",
-    he
-      ? "כתוב תשובות בעברית, בקול החנות (אנחנו). רק עובדות קונקרטיות שכתובות באתר: מספרים, תנאים, כן/לא ברור. בלי ביקורות לקוחות, בלי בדרך כלל/לרוב/אולי, ובלי ניחושים. אם זה לא כתוב באתר — missing: true ותשובה ריקה."
-      : "Write concrete store-voice facts from the site only: numbers, conditions, clear yes/no. No reviews, no usually/typically/maybe, no guesses. If the site doesn’t say it — missing: true and an empty answer.",
-    he
-      ? "אם יש דוגמת סגנון — חקה את העומק והמבנה, אבל רק עם עובדות מהאתר הנסרק. אל תעתיק שמות/מחירים/כתובות מהדוגמה."
-      : "If a style example is given, match its depth — using only facts from the scanned site, never names/prices/addresses from the example.",
-    "Return JSON only: [{\"qaId\":\"tpl-1\",\"topicId\":\"about\",\"answer\":\"...\",\"missing\":false}]",
-    "Questions:",
-    ...questions.map((item) =>
-      item.example
-        ? `- ${item.qaId}: ${item.question}\n  style example: ${item.example.slice(0, 420)}`
-        : `- ${item.qaId}: ${item.question}`,
-    ),
-    "Site text:",
-    pageBundle(focused),
-  ].join("\n");
+  const chunks: typeof questions[] = [];
+  for (let i = 0; i < questions.length; i += 8) chunks.push(questions.slice(i, i + 8));
 
-  const raw = (await runGemini(prompt)) || (await runOpenAi(prompt));
-  if (!raw) return [];
-  return parseSuggestions(raw, new Set(questions.map((item) => item.qaId)));
+  const out: CategorySuggestion[] = [];
+  for (const chunk of chunks) {
+    const prompt = [
+      he
+        ? `אתה ממלא שאלון מאגר ידע לחנות, לקטגוריה אחת בלבד: ${input.groupTitle}.`
+        : `Fill a knowledge-base questionnaire for one category only: ${input.groupTitle}.`,
+      he
+        ? "ענה רק על השאלות שניתנו. אל תוסיף שאלות חדשות ואל תערב נושאים מקטגוריה אחרת."
+        : "Answer only the given questions. Do not add questions or mix in other categories.",
+      he
+        ? "התאם את השאלון לעסק הזה. סמן notApplicable רק אם ברור שהנושא לא שייך לחנות. אל תמציא תוכניות שאין באתר."
+        : "Adapt the questionnaire to THIS store. Mark notApplicable only if the topic clearly does not belong. Do not invent programs the site does not have.",
+      he
+        ? "כתוב תשובות בעברית, בקול החנות (אנחנו). חפש בכל הטקסט: פוטר, FAQ, מדיניות, אודות, משלוחים והחזרות. אם זה כתוב באתר — ענה, גם אם זה קצר."
+        : "Store-voice facts from the scanned site. Search footer, FAQ, policies, about, shipping and returns. If it is on the site, answer it, even if short.",
+      he
+        ? "סמן missing רק אחרי שחיפשת ולא מצאת. אם כתוב במפורש שאין דבר כזה — ענה שאין, missing: false."
+        : "Mark missing only after searching and not finding it. If the site says it does not offer that — answer that it does not, missing: false.",
+      he
+        ? " לכל תשובה עם עובדה מהאתר הוסף sourceUrl של העמוד המדויק מהרשימה. אם יש דוגמת סגנון — חקה עומק רק עם עובדות מהאתר."
+        : "For every fact from the site, add sourceUrl of that exact page. Style examples: match depth using only this store’s facts.",
+      "Return JSON only: [{\"qaId\":\"tpl-1\",\"topicId\":\"about\",\"answer\":\"...\",\"missing\":false,\"notApplicable\":false,\"sourceUrl\":\"https://...\"}]",
+      "Questions:",
+      ...chunk.map((item) =>
+        item.example
+          ? `- ${item.qaId}: ${item.question}\n  style example: ${item.example.slice(0, 420)}`
+          : `- ${item.qaId}: ${item.question}`,
+      ),
+      "Site text:",
+      pageBundle(focused, chunk),
+    ].join("\n");
+    const raw = (await runGemini(prompt)) || (await runOpenAi(prompt));
+    if (!raw) continue;
+    out.push(...parseSuggestions(raw, new Set(chunk.map((item) => item.qaId))));
+  }
+
+  const answered = new Set(
+    out
+      .filter((item) => item.notApplicable || (item.answer.trim() && !item.missing))
+      .map((item) => item.qaId),
+  );
+  const unanswered = questions.filter((item) => !answered.has(item.qaId));
+  if (unanswered.length > 0) {
+    for (let i = 0; i < unanswered.length; i += 8) {
+      const chunk = unanswered.slice(i, i + 8);
+      const prompt = [
+        he
+          ? `השלם שאלות שחסרות להן תשובה בקטגוריה ${input.groupTitle}. חפש שוב בכל העמודים, כולל פוטר ו-FAQ.`
+          : `Fill remaining unanswered questions for ${input.groupTitle}. Search all pages again, including footer and FAQ.`,
+        he
+          ? "אם מצאת תשובה באתר — כתוב אותה. missing רק אם באמת אין."
+          : "If the site has the answer, write it. Mark missing only if it is truly absent.",
+        "Return JSON only: [{\"qaId\":\"tpl-1\",\"topicId\":\"about\",\"answer\":\"...\",\"missing\":false,\"notApplicable\":false,\"sourceUrl\":\"https://...\"}]",
+        "Questions:",
+        ...chunk.map((item) => `- ${item.qaId}: ${item.question}`),
+        "Site text:",
+        pageBundle(input.pages, chunk),
+      ].join("\n");
+      const raw = (await runGemini(prompt)) || (await runOpenAi(prompt));
+      if (!raw) continue;
+      for (const item of parseSuggestions(raw, new Set(chunk.map((row) => row.qaId)))) {
+        const prev = out.findIndex((row) => row.qaId === item.qaId);
+        if (prev >= 0) {
+          if ((!out[prev].answer.trim() || out[prev].missing) && item.answer.trim() && !item.missing) {
+            out[prev] = item;
+          }
+        } else {
+          out.push(item);
+        }
+      }
+    }
+  }
+  return out;
 }
 
 export function hasCategoryAi() {
   return Boolean(geminiKey() || openaiKey());
 }
 
+function pageScore(page: PageSnapshot, groupId: TopicGroupId) {
+  const hint = GROUP_PAGE_HINTS[groupId];
+  const topics = TOPICS.filter((topic) => topic.group === groupId);
+  const blob = `${page.path} ${page.title} ${page.text.slice(0, 4000)} ${page.text.slice(-2500)}`;
+  let score = 0;
+  if (page.path === "/" || page.path === "") score += 8;
+  if (/\/policies\//i.test(page.path) || /\/pages\//i.test(page.path)) score += 10;
+  if (/faq|שאלות[-_ ]?נפוצות/i.test(blob)) score += 12;
+  if (page.path === "/__site-index" || page.path === "/__social" || page.path === "/__shop") score += 12;
+  if (/\/products\//i.test(page.path)) score -= 4;
+  if (hint?.test(blob)) score += 14;
+  if (hint?.test(page.text.slice(-2500))) score += 8;
+  for (const topic of topics) {
+    if (topic.pathHints.test(page.path) || topic.pathHints.test(page.title)) score += 8;
+    if (topic.keywords.test(page.text.slice(0, 8000)) || topic.keywords.test(page.text.slice(-2500))) score += 6;
+  }
+  return score;
+}
+
 function pagesForGroup(groupId: TopicGroupId, pages: PageSnapshot[]) {
   const usable = pages.filter((page) => !isReviewPage(page.path, page.title));
-  const topics = TOPICS.filter((topic) => topic.group === groupId);
-  const home = usable.filter((page) => page.path === "/" || page.path === "");
-  const matched = usable.filter((page) =>
-    topics.some(
-      (topic) =>
-        topic.pathHints.test(page.path) ||
-        topic.pathHints.test(page.title) ||
-        topic.keywords.test(page.text.slice(0, 2500)),
-    ),
-  );
-  const seen = new Set<string>();
+  const ranked = usable
+    .map((page) => ({ page, score: pageScore(page, groupId) }))
+    .sort((a, b) => b.score - a.score);
   const selected: PageSnapshot[] = [];
-  for (const page of [...home, ...matched]) {
-    if (seen.has(page.url)) continue;
-    seen.add(page.url);
-    selected.push(page);
-    if (selected.length >= 10) break;
+  const seen = new Set<string>();
+  for (const row of ranked) {
+    if (row.score <= 0 && selected.length >= 8) continue;
+    if (seen.has(row.page.url)) continue;
+    seen.add(row.page.url);
+    selected.push(row.page);
+    if (selected.length >= 24) break;
   }
-  return selected;
+  if (selected.length > 0) return selected;
+  return usable.filter((page) => page.path === "/" || /\/policies\/|\/pages\//i.test(page.path)).slice(0, 12);
 }
+
+export type AiFillProgress = {
+  index: number;
+  done: number;
+  total: number;
+  groupTitle: string;
+  etaSec: number;
+};
+
+const SECONDS_PER_PAIR = 22;
 
 export async function aiFillStore(input: {
   pages: PageSnapshot[];
   lang: ClarityLang;
+  onProgress?: (event: AiFillProgress) => void | Promise<void>;
 }): Promise<CategorySuggestion[]> {
   if (!hasCategoryAi() || input.pages.length === 0) return [];
-  const groups = GROUPS.filter((group) => TOPICS.some((topic) => topic.group === group.id));
+  const groups = GROUPS.filter((group) => questionList(group.id, input.lang).length > 0);
   const suggestions: CategorySuggestion[] = [];
-  for (let index = 0; index < groups.length; index += 3) {
-    const chunk = groups.slice(index, index + 3);
+  for (let index = 0; index < groups.length; index += 2) {
+    const chunk = groups.slice(index, index + 2);
+    const remainingPairs = Math.ceil((groups.length - index) / 2);
+    const groupTitle = chunk
+      .map((group) => (input.lang === "he" ? group.titleHe : group.title))
+      .join(" · ");
+    await input.onProgress?.({
+      index,
+      done: Math.min(index + chunk.length, groups.length),
+      total: groups.length,
+      groupTitle,
+      etaSec: remainingPairs * SECONDS_PER_PAIR,
+    });
     const parts = await Promise.all(
       chunk.map((group) =>
         aiFillCategory({
           groupId: group.id,
           groupTitle: input.lang === "he" ? group.titleHe : group.title,
-          pages: pagesForGroup(group.id, input.pages),
+          pages: input.pages,
           lang: input.lang,
         }),
       ),
     );
     suggestions.push(...parts.flat());
   }
-  return suggestions.filter((item) => !item.missing && item.answer.trim());
+  return suggestions.filter((item) => item.notApplicable || (!item.missing && item.answer.trim()));
 }
 
 function parseOpenQuestions(raw: string): OpenQaSuggestion[] {
@@ -249,7 +428,7 @@ function parseOpenQuestions(raw: string): OpenQaSuggestion[] {
     return parsed.flatMap((item) => {
       const question = String(item.question || "").trim();
       const answer = String(item.answer || "").trim();
-      if (!question || !answer || !isUsableStoreFact(answer)) return [];
+      if (!question || !answer || !isUsableKbAnswer(answer)) return [];
       return [{ question, answer }];
     });
   } catch {

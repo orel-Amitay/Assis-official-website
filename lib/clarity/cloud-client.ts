@@ -25,11 +25,18 @@ export async function fetchCloudDraft(id: string): Promise<ClarityDraft | null> 
   return data.draft || null;
 }
 
-export async function patchCloudDraftState(id: string, state: ReviewState, lang: ClarityLang) {
+export async function patchCloudDraftState(
+  id: string,
+  state: ReviewState,
+  lang: ClarityLang,
+  options?: { keepalive?: boolean },
+) {
   const response = await fetch("/api/clarity/drafts", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ stateOnly: true, id, state, lang }),
+    cache: "no-store",
+    keepalive: Boolean(options?.keepalive),
   });
   if (response.status === 401) throw new Error("auth");
   if (response.status === 409) throw new Error("need-full");
@@ -40,11 +47,13 @@ export async function patchCloudDraftState(id: string, state: ReviewState, lang:
   return readJson<{ ok?: boolean; savedAt?: string }>(response);
 }
 
-export async function putCloudDraft(draft: ClarityDraft): Promise<ClarityDraft> {
+export async function putCloudDraft(draft: ClarityDraft, options?: { keepalive?: boolean }): Promise<ClarityDraft> {
   const response = await fetch("/api/clarity/drafts", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(draft),
+    cache: "no-store",
+    keepalive: Boolean(options?.keepalive),
   });
   if (response.status === 401) throw new Error("auth");
   if (!response.ok) {

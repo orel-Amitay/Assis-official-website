@@ -1,4 +1,4 @@
-import { aiFillCategory, aiFillOpenQuestions, hasCategoryAi, type CategorySuggestion, type OpenQaSuggestion } from "./ai-fill";
+import { aiFillCategory, hasCategoryAi, type CategorySuggestion, type OpenQaSuggestion } from "./ai-fill";
 import { extractClaims } from "./extract";
 import { isProcessTopic } from "./focus";
 import { templateQas } from "./import-kb";
@@ -24,21 +24,24 @@ export async function runCategoryScan(
   groupId: TopicGroupId,
   lang: ClarityLang,
 ): Promise<CategoryScanResult> {
-  if (groupId === "open") {
+  if (groupId === "extra") {
     const { result, pages } = await scanStoreWithPages(url);
-    const openQas = await aiFillOpenQuestions({
+    const group = groupById(groupId);
+    const suggestions = await aiFillCategory({
+      groupId,
+      groupTitle: lang === "he" ? group.titleHe : group.title,
       pages,
       lang,
-      existingQuestions: templateQas().map((item) => item.question),
     });
     return {
       storeUrl: result.storeUrl,
       storeName: result.storeName,
       pages: pages.length,
       claims: [],
-      suggestions: [],
-      openQas,
-      missingQaIds: [],
+      suggestions,
+      missingQaIds: templateQas()
+        .filter((item) => item.groupId === groupId && !suggestions.some((row) => row.qaId === item.id && !row.missing))
+        .map((item) => item.id),
       usedAi: hasCategoryAi(),
     };
   }
