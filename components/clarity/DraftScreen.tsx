@@ -911,9 +911,9 @@ export default function DraftScreen({
               {t.viewSlides}
             </button>
           </div>
+          <QaFilterBar lang={lang} selected={filters} counts={filterCounts} onChange={setFilters} />
           <ClarityHelpButton label={t.guideCta} onClick={guide.show} />
         </div>
-        <QaFilterBar lang={lang} selected={filters} counts={filterCounts} onChange={setFilters} compact />
       </div>
 
       <AnimatePresence>

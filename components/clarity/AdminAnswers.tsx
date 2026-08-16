@@ -438,12 +438,15 @@ function AdminDraftView({
       <div className="sticky top-0 z-30 -mx-4 border-b border-black/[0.05] bg-[#f7f8fa]/95 px-4 py-2 backdrop-blur-md sm:mx-0 sm:rounded-[1.3rem] sm:border sm:px-3 sm:py-2.5">
         <div className="min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <p className="truncate text-[11px] font-semibold text-foreground sm:text-[12px]">
+            <p className="min-w-0 truncate text-[11px] font-semibold text-foreground sm:text-[12px]">
               {t.progressDone.replace("{done}", String(progressDone)).replace("{total}", String(progressTotal))}
             </p>
-            <p className="shrink-0 text-[10px] font-medium text-zinc-500 sm:text-[11px]">
-              {progressLeft > 0 ? t.progressLeft.replace("{n}", String(progressLeft)) : t.allComplete}
-            </p>
+            <div className="flex shrink-0 items-center gap-2">
+              <p className="text-[10px] font-medium text-zinc-500 sm:text-[11px]">
+                {progressLeft > 0 ? t.progressLeft.replace("{n}", String(progressLeft)) : t.allComplete}
+              </p>
+              <QaFilterBar lang={lang} selected={filters} counts={filterCounts} onChange={setFilters} />
+            </div>
           </div>
           <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-zinc-200/80">
             <div
@@ -455,7 +458,6 @@ function AdminDraftView({
             {t.adminLive}
             {updatedAt ? ` · ${updatedAt}` : ""}
           </p>
-          <QaFilterBar lang={lang} selected={filters} counts={filterCounts} onChange={setFilters} compact />
         </div>
       </div>
 
