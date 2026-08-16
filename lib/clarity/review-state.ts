@@ -200,8 +200,31 @@ export function knowledgeJson(
   return categories;
 }
 
+export function toAssisKnowledgeJson(categories: KnowledgeCategory[]): KnowledgeCategory[] {
+  return categories
+    .map((category) => ({
+      name: category.name,
+      sections: category.sections
+        .map((section) => ({
+          detailName: section.detailName,
+          needsReview: Boolean(section.needsReview),
+          detailContent: section.detailContent
+            .filter((item) => !item.notApplicable && String(item.answer || "").trim())
+            .map((item) => ({
+              answer: item.answer,
+              approval: item.approval === "approved" ? ("approved" as const) : ("pending" as const),
+              question: item.question || "",
+              availableForAgents: Boolean(item.availableForAgents),
+              availableForCustomers: Boolean(item.availableForCustomers),
+            })),
+        }))
+        .filter((section) => section.detailContent.length > 0),
+    }))
+    .filter((category) => category.sections.length > 0);
+}
+
 export function knowledgeJsonText(result: ScanResult, state: ReviewState, lang: ClarityLang = "he") {
-  return `${JSON.stringify(knowledgeJson(result, state, lang), null, 2)}\n`;
+  return `${JSON.stringify(toAssisKnowledgeJson(knowledgeJson(result, state, lang)), null, 2)}\n`;
 }
 
 export function remapLegacyCustomQa(item: CustomQaItem): CustomQaItem {

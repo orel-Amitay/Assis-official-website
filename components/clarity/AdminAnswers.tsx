@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { COPY, type ClarityLang } from "@/lib/clarity/copy";
 import { shortDashes } from "@/lib/clarity/text";
 import type { AdminDraftAnswers } from "@/lib/clarity/admin-types";
-import { knowledgeFileSlug } from "@/lib/clarity/knowledge-export";
+import { knowledgeFileSlug, knowledgeFileStamp } from "@/lib/clarity/knowledge-export";
+import { toAssisKnowledgeJson } from "@/lib/clarity/review-state";
 import { countQaFilters, customFilterFlags, matchesQaFilters, type QaFilter } from "@/lib/clarity/qa-filters";
 import { GROUPS } from "@/lib/clarity/topics";
 import ClarityShell from "./ClarityShell";
@@ -32,14 +33,11 @@ function downloadJson(filename: string, data: unknown) {
 }
 
 function exportDraft(draft: AdminDraftAnswers) {
-  return {
-    storeName: draft.storeName,
-    storeUrl: draft.storeUrl,
-    savedAt: draft.savedAt,
-    user: { email: draft.email, name: draft.name, username: draft.username, userId: draft.userId },
-    sections: draft.answers,
-    questionnaire: draft.questionnaire,
-  };
+  return toAssisKnowledgeJson(draft.answers || []);
+}
+
+function knowledgeDownloadName(storeName: string) {
+  return `knowledge-base-${knowledgeFileSlug(storeName)}-${knowledgeFileStamp()}.json`;
 }
 
 function itemStatus(item: AdminItem): QaStatus {
@@ -276,7 +274,16 @@ function AdminStoreList({
         <button
           type="button"
           onClick={() =>
-            downloadJson(`clarity-answers-${new Date().toISOString().slice(0, 10)}.json`, drafts.map(exportDraft))
+            downloadJson(
+              `knowledge-base-all-${knowledgeFileStamp()}.json`,
+              drafts.length === 1
+                ? exportDraft(drafts[0])
+                : drafts.map((draft) => ({
+                    storeName: draft.storeName,
+                    storeUrl: draft.storeUrl,
+                    knowledge: exportDraft(draft),
+                  })),
+            )
           }
           className="mt-5 inline-flex h-10 items-center rounded-full bg-zinc-900 px-4 text-[13px] font-semibold text-white hover:bg-zinc-800"
         >
@@ -330,10 +337,7 @@ function AdminStoreList({
                     <button
                       type="button"
                       onClick={() =>
-                        downloadJson(
-                          `clarity-${knowledgeFileSlug(draft.storeName)}-${draft.draftId.slice(0, 8)}.json`,
-                          exportDraft(draft),
-                        )
+                        downloadJson(knowledgeDownloadName(draft.storeName), exportDraft(draft))
                       }
                       className="inline-flex h-10 items-center rounded-full border border-black/[0.08] bg-white px-3 text-[12px] font-medium text-zinc-600 hover:text-foreground"
                     >
