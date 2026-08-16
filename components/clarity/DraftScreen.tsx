@@ -854,7 +854,7 @@ export default function DraftScreen({
         <p className="max-w-[45%] truncate text-[11px] text-zinc-400">{result.storeName}</p>
       </div>
 
-      <div className="sticky top-0 z-30 -mx-4 border-b border-black/[0.05] bg-[#f7f8fa]/95 px-4 py-2 backdrop-blur-md sm:mx-0 sm:rounded-[1.3rem] sm:border sm:px-3 sm:py-2.5">
+      <div className="sticky top-0 z-30 -mx-3 border-b border-black/[0.05] bg-[#f7f8fa] px-3 py-2 sm:mx-0 sm:rounded-[1.3rem] sm:border sm:px-3 sm:py-2.5 [transform:translateZ(0)]">
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">

@@ -24,7 +24,7 @@ export default function ClarityShell({
     <div
       dir={rtl ? "rtl" : "ltr"}
       lang={lang === "he" ? "he" : "en"}
-      className="relative isolate min-h-[100dvh] overflow-x-clip bg-[#f7f8fa]"
+      className="relative isolate min-h-full bg-[#f7f8fa]"
       style={{ fontFamily: "var(--font-clarity), var(--font-manrope), sans-serif" }}
     >
       <div
