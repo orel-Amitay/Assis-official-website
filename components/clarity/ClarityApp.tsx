@@ -233,6 +233,7 @@ export default function ClarityApp() {
       if (!signedIn) {
         if (!cancelled) {
           setDrafts([]);
+          setError("");
           setStep("start");
           setResult(null);
           setState(null);
@@ -241,9 +242,9 @@ export default function ClarityApp() {
       }
 
       try {
-        clearLocalClarityData();
         const cloud = await fetchCloudDrafts();
         if (cancelled) return;
+        setError("");
         setDrafts(cloud.drafts);
         setIsAdmin(cloud.admin);
         setStep("start");
@@ -258,7 +259,14 @@ export default function ClarityApp() {
           window.history.replaceState(null, "", query ? `/clarity?${query}` : "/clarity");
         }
       } catch {
-        if (!cancelled) setDrafts([]);
+        if (!cancelled) {
+          setDrafts([]);
+          setError(
+            lang === "he"
+              ? "לא הצלחנו לטעון את הסריקות מהחשבון. רעננו את העמוד או התחברו מחדש."
+              : "We couldn’t load the scans for this account. Refresh or sign in again.",
+          );
+        }
       }
     }
 
@@ -432,7 +440,7 @@ export default function ClarityApp() {
         } catch {
           saveFailRef.current += 1;
           if (saveFailRef.current < 4) saveAgainRef.current = true;
-          setCloudSave("saved");
+          setCloudSave("error");
         }
       } while (saveAgainRef.current);
     } finally {
@@ -446,23 +454,27 @@ export default function ClarityApp() {
   persistNowRef.current = persistDraft;
 
   async function resumeDraft(id: string) {
-    if (signedIn) {
-      const cloud = await fetchCloudDraft(id);
-      if (!cloud) {
-        const listed = await fetchCloudDrafts().catch(() => ({ drafts: [] as ClarityDraftMeta[], admin: false }));
-        setDrafts(listed.drafts);
-        setIsAdmin(listed.admin);
+    setError("");
+    try {
+      if (signedIn) {
+        const cloud = await fetchCloudDraft(id);
+        if (!cloud) {
+          setError(lang === "he" ? "לא הצלחנו לפתוח את השאלון." : "That questionnaire couldn’t be opened.");
+          return;
+        }
+        openDraft(cloud, { fromCloud: true });
         return;
       }
-      openDraft(cloud, { fromCloud: true });
-      return;
+      const draft = loadDraft(id);
+      if (!draft) {
+        setDrafts(listDrafts());
+        setError(lang === "he" ? "לא הצלחנו לפתוח את השאלון." : "That questionnaire couldn’t be opened.");
+        return;
+      }
+      openDraft(draft);
+    } catch {
+      setError(lang === "he" ? "לא הצלחנו לפתוח את השאלון." : "That questionnaire couldn’t be opened.");
     }
-    const draft = loadDraft(id);
-    if (!draft) {
-      setDrafts(listDrafts());
-      return;
-    }
-    openDraft(draft);
   }
 
   async function removeDraft(id: string) {
@@ -900,9 +912,16 @@ export default function ClarityApp() {
             onResumeDraft={(id) => void resumeDraft(id)}
             onDeleteDraft={(id) => void removeDraft(id)}
             onImportDraft={importDraftFile}
-            isAdmin={isAdmin}
+            isAdmin={
+              isAdmin ||
+              String(session?.user?.email || "")
+                .trim()
+                .toLowerCase()
+                .endsWith("@assis.care")
+            }
+            error={error}
           />
-          {error ? (
+          {error && step !== "start" ? (
             <div className="mx-auto max-w-xl px-4 pb-12 sm:px-8">
               <div className="rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4">
                 <p className="text-sm font-semibold text-amber-900">{COPY[lang].errorTitle}</p>

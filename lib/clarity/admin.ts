@@ -33,7 +33,7 @@ export async function listAdminDraftAnswers(): Promise<AdminDraftAnswers[]> {
   const db = sql();
   const rows = (await db`
     SELECT
-      u.id AS user_id,
+      d.user_id,
       u.email,
       u.name,
       u.username,
@@ -45,7 +45,7 @@ export async function listAdminDraftAnswers(): Promise<AdminDraftAnswers[]> {
       d.deleted_at,
       d.payload
     FROM clarity_drafts d
-    JOIN clarity_users u ON u.id = d.user_id
+    LEFT JOIN clarity_users u ON u.id = d.user_id
     ORDER BY d.saved_at DESC
   `) as {
     user_id: string;
@@ -61,42 +61,48 @@ export async function listAdminDraftAnswers(): Promise<AdminDraftAnswers[]> {
     payload: unknown;
   }[];
 
-  return rows.flatMap((row) => {
+  return rows.map((row) => {
     const parsed =
       typeof row.payload === "string"
         ? parseDraftFile(row.payload)
         : parseDraftFile(JSON.stringify(row.payload));
-    if (!parsed?.result || !parsed.state) return [];
-    const lang: ClarityLang = parsed.lang === "en" ? "en" : "he";
-    return [
-      {
-        userId: row.user_id,
-        email: row.email,
-        name: row.name,
-        username: row.username,
-        draftId: row.draft_id,
-        storeUrl: row.store_url || parsed.result.storeUrl,
-        storeName: row.store_name || parsed.result.storeName,
-        savedAt: row.saved_at instanceof Date ? row.saved_at.toISOString() : String(row.saved_at),
-        deleted: Boolean(row.deleted_at),
-        lang,
-        answers: knowledgeJson(parsed.result, parsed.state, lang, { includeNotApplicable: true }),
-        questionnaire: (parsed.state.customQas || []).map((item) => ({
-          id: item.id,
-          groupId: item.groupId,
-          section: item.section,
-          detailName: item.detailName,
-          question: item.question,
-          answer: item.answer,
-          skipped: item.skipped,
-          notApplicable: item.notApplicable,
-          suggestedAnswer: item.suggestedAnswer,
-          verdict: item.verdict,
-          sourceUrl: item.sourceUrl,
-          sourceTitle: item.sourceTitle,
-        })),
-      },
-    ];
+    const lang: ClarityLang = parsed?.lang === "en" || row.lang === "en" ? "en" : "he";
+    let answers: AdminDraftAnswers["answers"] = [];
+    try {
+      answers =
+        parsed?.result && parsed.state
+          ? knowledgeJson(parsed.result, parsed.state, lang, { includeNotApplicable: true })
+          : [];
+    } catch {
+      answers = [];
+    }
+    return {
+      userId: row.user_id,
+      email: row.email,
+      name: row.name,
+      username: row.username,
+      draftId: row.draft_id,
+      storeUrl: row.store_url || parsed?.result.storeUrl || "",
+      storeName: row.store_name || parsed?.result.storeName || row.draft_id,
+      savedAt: row.saved_at instanceof Date ? row.saved_at.toISOString() : String(row.saved_at),
+      deleted: Boolean(row.deleted_at),
+      lang,
+      answers,
+      questionnaire: (parsed?.state.customQas || []).map((item) => ({
+        id: item.id,
+        groupId: item.groupId,
+        section: item.section,
+        detailName: item.detailName,
+        question: item.question,
+        answer: item.answer,
+        skipped: item.skipped,
+        notApplicable: item.notApplicable,
+        suggestedAnswer: item.suggestedAnswer,
+        verdict: item.verdict,
+        sourceUrl: item.sourceUrl,
+        sourceTitle: item.sourceTitle,
+      })),
+    };
   });
 }
 

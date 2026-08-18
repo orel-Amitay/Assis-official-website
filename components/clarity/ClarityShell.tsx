@@ -1,10 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { COPY, type ClarityLang } from "@/lib/clarity/copy";
-import ClarityAuthForm from "./ClarityAuthForm";
+import { clearLocalClarityData } from "@/lib/clarity/draft";
 
 const HEART = "/brand/assis-heart-classic.png";
 
@@ -24,7 +24,7 @@ export default function ClarityShell({
     <div
       dir={rtl ? "rtl" : "ltr"}
       lang={lang === "he" ? "he" : "en"}
-      className="relative isolate min-h-full bg-[#f7f8fa]"
+      className="relative isolate min-h-[100dvh] bg-[#f7f8fa]"
       style={{ fontFamily: "var(--font-clarity), var(--font-manrope), sans-serif" }}
     >
       <div
@@ -79,38 +79,11 @@ export default function ClarityShell({
 function ClarityAccount({ lang }: { lang: ClarityLang }) {
   const t = COPY[lang];
   const { data: session, status } = useSession();
-  const [open, setOpen] = useState(false);
   if (status === "loading") {
     return <span className="h-8 w-24 rounded-full bg-white/60" />;
   }
   if (!session?.user?.id) {
-    return (
-      <>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="inline-flex h-8 items-center rounded-full border border-black/[0.06] bg-white/90 px-3 text-[12px] font-semibold text-foreground transition hover:border-assis-blue/30"
-        >
-          {t.signInCta}
-        </button>
-        {open ? (
-          <div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-900/25 p-0 backdrop-blur-[2px] sm:items-center sm:p-3"
-            onClick={() => setOpen(false)}
-          >
-            <div
-              className="w-full max-w-sm rounded-t-[1.4rem] border border-white/70 bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[0_24px_60px_-28px_rgba(16,24,40,0.35)] sm:rounded-[1.4rem] sm:pb-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <p className="text-[13px] font-semibold text-foreground">{t.signInHint}</p>
-              <div className="mt-4">
-                <ClarityAuthForm lang={lang} />
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </>
-    );
+    return null;
   }
   return (
     <div className="flex items-center gap-1.5">
@@ -127,7 +100,10 @@ function ClarityAccount({ lang }: { lang: ClarityLang }) {
       </span>
       <button
         type="button"
-        onClick={() => signOut({ callbackUrl: "/clarity" })}
+        onClick={() => {
+          clearLocalClarityData();
+          void signOut({ callbackUrl: "/clarity" });
+        }}
         className="inline-flex h-8 items-center rounded-full px-2 text-[12px] font-medium text-zinc-500 transition hover:text-foreground sm:px-1"
       >
         {t.signOut}
