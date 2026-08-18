@@ -81,7 +81,7 @@ export default function Heart({
             transition={{ duration: 1 }}
           >
             <Image
-              src="/brand/assis-heart.png"
+              src="/brand/assis-heart-classic.png"
               alt="ASSIS heart"
               fill
               sizes={`${size}px`}

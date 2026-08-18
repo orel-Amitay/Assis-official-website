@@ -33,3 +33,8 @@ ALTER TABLE clarity_users ADD COLUMN IF NOT EXISTS username TEXT;
 ALTER TABLE clarity_users ADD COLUMN IF NOT EXISTS password_hash TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS clarity_users_username_idx
   ON clarity_users (username) WHERE username IS NOT NULL;
+
+ALTER TABLE clarity_drafts ADD COLUMN IF NOT EXISTS public_slug TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS clarity_drafts_public_slug_idx
+  ON clarity_drafts (public_slug)
+  WHERE public_slug IS NOT NULL AND deleted_at IS NULL;

@@ -1,4 +1,4 @@
-// Aspect ratio matches the real ASSIS heart asset (public/brand/assis-heart.png, 1024x967).
+// Aspect ratio matches the Assis heart without the speech-bubble tail (public/brand/assis-heart-classic.png, 1024x989).
 export const HEART_VIEWBOX = "0 0 200 189";
 
 // Rough silhouette of the real mark - used only as an invisible clip region

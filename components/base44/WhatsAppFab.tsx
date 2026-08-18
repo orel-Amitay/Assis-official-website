@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 
-const WHATSAPP_URL = "https://wa.me/972559995038";
+const WHATSAPP_URL = "https://wa.me/972552600950";
 
 export default function WhatsAppFab() {
   return (

@@ -34,8 +34,8 @@ export const metadata: Metadata = {
   description:
     "Assis manages the relationship between your e-commerce business and your customers - the operating layer that grows revenue, trust, and better decisions.",
   icons: {
-    icon: "/brand/assis-heart-whatsapp.png",
-    apple: "/brand/assis-heart-whatsapp.png",
+    icon: "/brand/assis-heart-classic.png",
+    apple: "/brand/assis-heart-classic.png",
   },
 };
 

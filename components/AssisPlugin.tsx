@@ -15,6 +15,9 @@ const CHAT_PROMO_ROOT_ID = "assis-site-chat-promo";
 const STARTER_STYLE_ID = "assis-site-starter-style";
 const STARTER_ROOT_ID = "assis-site-starter-prompts";
 const STARTER_DISMISS_KEY = "assis-site-starter-dismissed-v1";
+const WHATSAPP_PHONE = "972552600950";
+const WHATSAPP_URL =
+  `https://api.whatsapp.com/send/?phone=${WHATSAPP_PHONE}&text&type=phone_number&app_absent=0`;
 
 const STARTER_PROMPTS = [
   "How does Assis work?",
@@ -42,6 +45,7 @@ const CHAT_PROMO_SLIDES = [
     tone: "whatsapp",
     text: "Also available on WhatsApp",
     icon: "whatsapp",
+    href: WHATSAPP_URL,
   },
   {
     tone: "blue",
@@ -214,6 +218,10 @@ function injectChatPromoStyles() {
     #${CHAT_PROMO_ROOT_ID} .assis-site-promo-link[data-tone="whatsapp"] {
       background: #eaf8ef;
       color: #166534;
+      cursor: pointer;
+    }
+    #${CHAT_PROMO_ROOT_ID} .assis-site-promo-link[data-tone="whatsapp"]:hover {
+      background: #dff3e6;
     }
     #${CHAT_PROMO_ROOT_ID} .assis-site-promo-link[data-tone="blue"] {
       background: #f0f5ff;
@@ -243,10 +251,10 @@ function ensureChatPromoMounted(chat: HTMLElement) {
     root = document.createElement("div");
     root.id = CHAT_PROMO_ROOT_ID;
     root.innerHTML = `
-      <div class="assis-site-promo-link" data-tone="blue">
+      <a class="assis-site-promo-link" data-tone="blue">
         <span class="assis-site-promo-icon" aria-hidden="true"></span>
         <p class="assis-site-promo-text"></p>
-      </div>
+      </a>
     `;
   }
 
@@ -272,10 +280,23 @@ function setupChatPromoBanner() {
   const renderSlide = (root: HTMLElement) => {
     const slide = CHAT_PROMO_SLIDES[slideIndex];
     if (!slide) return;
-    const link = root.querySelector(".assis-site-promo-link") as HTMLElement | null;
+    const link = root.querySelector(".assis-site-promo-link") as HTMLAnchorElement | null;
     const icon = root.querySelector(".assis-site-promo-icon") as HTMLElement | null;
     const text = root.querySelector(".assis-site-promo-text") as HTMLElement | null;
-    if (link) link.dataset.tone = slide.tone;
+    if (link) {
+      link.dataset.tone = slide.tone;
+      if ("href" in slide && slide.href) {
+        link.href = slide.href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.setAttribute("aria-label", "Chat with Assis on WhatsApp");
+      } else {
+        link.removeAttribute("href");
+        link.removeAttribute("target");
+        link.removeAttribute("rel");
+        link.removeAttribute("aria-label");
+      }
+    }
     if (icon) icon.innerHTML = PROMO_ICONS[slide.icon];
     if (text) text.textContent = slide.text;
   };
@@ -372,6 +393,8 @@ type AssisVueProxy = {
   sendQuickAction?: (message: string) => void | Promise<void>;
   toggleChat?: () => void | Promise<void>;
   isChatOpen?: boolean;
+  businessWhatsAppNumber?: string | null;
+  isWhatsAppNumberFetched?: boolean;
 };
 
 function findAssisVueProxy(): AssisVueProxy | null {
@@ -409,6 +432,50 @@ function findAssisVueProxy(): AssisVueProxy | null {
   }
 
   return null;
+}
+
+function enableWhatsAppHandoff() {
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.href
+          : input.url;
+    if (url.includes("/api/whatsapp/phone")) {
+      return Promise.resolve(
+        new Response(JSON.stringify({ whatsapp: WHATSAPP_PHONE }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    }
+    return originalFetch(input, init);
+  };
+
+  const apply = () => {
+    const proxy = findAssisVueProxy();
+    if (!proxy) return false;
+    if (proxy.businessWhatsAppNumber !== WHATSAPP_PHONE) {
+      proxy.businessWhatsAppNumber = WHATSAPP_PHONE;
+      proxy.isWhatsAppNumberFetched = true;
+    }
+    return true;
+  };
+
+  apply();
+  const observer = new MutationObserver(() => {
+    if (apply()) observer.disconnect();
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+  const timers = [400, 1200, 3000, 6000].map((ms) => window.setTimeout(apply, ms));
+
+  return () => {
+    observer.disconnect();
+    timers.forEach((id) => window.clearTimeout(id));
+    window.fetch = originalFetch;
+  };
 }
 
 function isAssisChatVisiblyOpen() {
@@ -841,11 +908,13 @@ export default function AssisPlugin() {
     ensureMountElement();
     loadAssisPluginStyles();
     loadSitePluginTweaks();
+    const cleanupWhatsApp = enableWhatsAppHandoff();
     loadAssisPluginScript();
     replacePluginHeartIcon();
     const cleanupPromo = setupChatPromoBanner();
     const cleanupStarters = setupStarterPrompts();
     return () => {
+      cleanupWhatsApp();
       cleanupPromo();
       cleanupStarters();
     };

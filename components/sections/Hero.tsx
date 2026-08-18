@@ -194,7 +194,7 @@ export default function Hero() {
           </span>
           <div className="h-px flex-1 bg-zinc-200/80" />
           <Image
-            src="/brand/assis-heart.png"
+            src="/brand/assis-heart-classic.png"
             alt="Assis"
             width={32}
             height={31}

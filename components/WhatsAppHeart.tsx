@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 
 const WHATSAPP_URL =
-  "https://api.whatsapp.com/send/?phone=972559995038&text&type=phone_number&app_absent=0";
+  "https://api.whatsapp.com/send/?phone=972552600950&text&type=phone_number&app_absent=0";
 
 const HEART_WIDTH = 72;
 const HEART_HEIGHT = Math.round(HEART_WIDTH * (989 / 1024));

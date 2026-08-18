@@ -6,7 +6,7 @@ import { X, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 
 const WHATSAPP_URL =
-  "https://api.whatsapp.com/send/?phone=972559995038&text&type=phone_number&app_absent=0";
+  "https://api.whatsapp.com/send/?phone=972552600950&text&type=phone_number&app_absent=0";
 
 function WhatsAppHint() {
   return (

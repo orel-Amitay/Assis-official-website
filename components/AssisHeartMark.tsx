@@ -20,10 +20,10 @@ export default function AssisHeartMark({
 }: AssisHeartMarkProps) {
   const img = (
     <Image
-      src="/brand/assis-heart.png"
+      src="/brand/assis-heart-classic.png"
       alt="Assis"
       width={size}
-      height={Math.round(size * 0.97)}
+      height={Math.round(size * 0.966)}
       unoptimized
       className="object-contain drop-shadow-[0_8px_24px_rgba(29,111,238,0.35)]"
       style={{ width: size, height: "auto" }}

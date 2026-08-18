@@ -7,7 +7,7 @@ const PILLARS = [
     title: "We automate.",
     line: "So customers never wait.",
     proof: "93% resolved automatically",
-    image: "/brand/assis-heart.png",
+    image: "/brand/assis-heart-classic.png",
     imageClass: "h-9 w-9",
   },
   {

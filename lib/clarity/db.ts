@@ -120,6 +120,10 @@ export async function ensureClaritySchema() {
       await db`ALTER TABLE clarity_users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
       await db`CREATE UNIQUE INDEX IF NOT EXISTS clarity_users_username_idx
         ON clarity_users (username) WHERE username IS NOT NULL`;
+      await db`ALTER TABLE clarity_drafts ADD COLUMN IF NOT EXISTS public_slug TEXT`;
+      await db`CREATE UNIQUE INDEX IF NOT EXISTS clarity_drafts_public_slug_idx
+        ON clarity_drafts (public_slug)
+        WHERE public_slug IS NOT NULL AND deleted_at IS NULL`;
       await migrateGoogleIdentities(db);
     })().catch((error) => {
       schemaReady = null;
