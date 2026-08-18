@@ -8,9 +8,11 @@ async function readJson<T>(response: Response) {
 
 export async function fetchCloudDrafts(): Promise<{ drafts: ClarityDraftMeta[]; admin: boolean }> {
   const response = await fetch("/api/clarity/drafts", { cache: "no-store" });
+  const data = await readJson<{ drafts?: ClarityDraftMeta[]; admin?: boolean; error?: string; detail?: string }>(
+    response,
+  ).catch(() => ({ drafts: [] as ClarityDraftMeta[], admin: false, error: "", detail: "" }));
   if (response.status === 401) throw new Error("auth");
-  if (!response.ok) throw new Error("cloud-list");
-  const data = await readJson<{ drafts?: ClarityDraftMeta[]; admin?: boolean }>(response);
+  if (!response.ok) throw new Error(data.detail || data.error || "cloud-list");
   return {
     drafts: Array.isArray(data.drafts) ? data.drafts : [],
     admin: Boolean(data.admin),

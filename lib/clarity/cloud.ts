@@ -49,37 +49,49 @@ function accountEmail(email?: string | null) {
 
 async function ownerUserIds(account: ClarityAccount) {
   const ids = new Set<string>(ownerIdCandidates(account));
-  const add = (value?: string | null) => {
-    const id = String(value || "").trim();
-    if (id) ids.add(id);
-  };
-
   const email = accountEmail(account.email);
+  if (!email) return [...ids];
   const db = sql();
-  if (email) {
-    const userRows = (await db`
-      SELECT id FROM clarity_users
-      WHERE lower(coalesce(email, '')) = ${email}
-    `) as { id: string }[];
-    for (const row of userRows) add(row.id);
-  }
-
-  const known = [...ids];
-  for (const alias of known) {
-    const rows = (await db`
-      SELECT id, email FROM clarity_users WHERE id = ${alias} LIMIT 1
-    `) as { id: string; email: string | null }[];
-    const row = rows[0];
-    if (!row) continue;
-    const rowEmail = accountEmail(row.email);
-    if (rowEmail && email && rowEmail !== email) {
-      ids.delete(alias);
-      continue;
+  const userRows = (await db`
+    SELECT id FROM clarity_users
+    WHERE lower(coalesce(email, '')) = ${email}
+  `) as { id: string }[];
+  for (const row of userRows) {
+    if (!isPasswordUserId(row.id) || isPasswordUserId(canonicalClarityUserId(account))) {
+      ids.add(row.id);
     }
-    add(row.id);
   }
+  return [...ids].filter(Boolean);
+}
 
-  return [...ids];
+async function draftsForOwners(ownerIds: string[], email?: string) {
+  const db = sql();
+  const found: DraftRow[] = [];
+  if (email) {
+    const rows = (await db`
+      SELECT d.id, d.store_url, d.store_name, d.scanned_at, d.saved_at, d.pages, d.demo, d.lang
+      FROM clarity_drafts d
+      INNER JOIN clarity_users u ON u.id = d.user_id
+      WHERE d.deleted_at IS NULL AND lower(coalesce(u.email, '')) = ${email}
+      ORDER BY d.saved_at DESC
+    `) as DraftRow[];
+    found.push(...rows);
+  }
+  for (const ownerId of ownerIds) {
+    const rows = (await db`
+      SELECT id, store_url, store_name, scanned_at, saved_at, pages, demo, lang
+      FROM clarity_drafts
+      WHERE user_id = ${ownerId} AND deleted_at IS NULL
+      ORDER BY saved_at DESC
+    `) as DraftRow[];
+    found.push(...rows);
+  }
+  const latest = new Map<string, DraftRow>();
+  for (const row of found) {
+    const current = latest.get(row.id);
+    if (!current || iso(row.saved_at) > iso(current.saved_at)) latest.set(row.id, row);
+  }
+  return [...latest.values()].sort((a, b) => (iso(a.saved_at) < iso(b.saved_at) ? 1 : -1));
 }
 
 async function adoptDraftsToCanonical(canonicalId: string, aliasIds: string[], email?: string | null) {
@@ -150,27 +162,6 @@ async function adoptDraftsToCanonical(canonicalId: string, aliasIds: string[], e
   }
 }
 
-async function draftsForOwners(ownerIds: string[]) {
-  if (!ownerIds.length) return [] as DraftRow[];
-  const db = sql();
-  const found: DraftRow[] = [];
-  for (const ownerId of ownerIds) {
-    const rows = (await db`
-      SELECT id, store_url, store_name, scanned_at, saved_at, pages, demo, lang
-      FROM clarity_drafts
-      WHERE user_id = ${ownerId} AND deleted_at IS NULL
-      ORDER BY saved_at DESC
-    `) as DraftRow[];
-    found.push(...rows);
-  }
-  const latest = new Map<string, DraftRow>();
-  for (const row of found) {
-    const current = latest.get(row.id);
-    if (!current || iso(row.saved_at) > iso(current.saved_at)) latest.set(row.id, row);
-  }
-  return [...latest.values()].sort((a, b) => (iso(a.saved_at) < iso(b.saved_at) ? 1 : -1));
-}
-
 export async function upsertClarityUser(user: {
   id: string;
   email?: string | null;
@@ -201,7 +192,7 @@ export async function upsertClarityUser(user: {
 
 export async function listClarityDrafts(account: ClarityAccount): Promise<ClarityDraftMeta[]> {
   await ensureClaritySchema();
-  const rows = await draftsForOwners(await ownerUserIds(account));
+  const rows = await draftsForOwners(await ownerUserIds(account), accountEmail(account.email));
   return rows.map(metaFromRow);
 }
 
@@ -212,7 +203,7 @@ export async function getClarityDraft(account: ClarityAccount, id: string): Prom
   const host = draftIdFor(rawId.startsWith("http") ? rawId : `https://${rawId}`).replace(/^www\./i, "");
   const wanted = new Set([rawId, rawId.toLowerCase(), host, `www.${host}`].filter(Boolean));
   const ownerIds = await ownerUserIds(account);
-  const rows = await draftsForOwners(ownerIds);
+  const rows = await draftsForOwners(ownerIds, accountEmail(account.email));
   const match =
     rows.find((item) => wanted.has(item.id) || wanted.has(item.id.toLowerCase())) ||
     rows.find((item) => {
@@ -220,6 +211,21 @@ export async function getClarityDraft(account: ClarityAccount, id: string): Prom
       return itemHost === host || item.id.replace(/^www\./i, "") === host;
     });
   if (!match) return null;
+  const email = accountEmail(account.email);
+  if (email) {
+    const byEmail = (await db`
+      SELECT d.id, d.store_url, d.store_name, d.scanned_at, d.saved_at, d.pages, d.demo, d.lang, d.payload
+      FROM clarity_drafts d
+      INNER JOIN clarity_users u ON u.id = d.user_id
+      WHERE d.id = ${match.id}
+        AND d.deleted_at IS NULL
+        AND lower(coalesce(u.email, '')) = ${email}
+      ORDER BY d.saved_at DESC
+      LIMIT 1
+    `) as DraftRow[];
+    const parsed = byEmail[0] ? draftFromRow(byEmail[0]) : null;
+    if (parsed) return slimDraft({ ...parsed, id: byEmail[0].id });
+  }
   for (const ownerId of ownerIds) {
     const found = (await db`
       SELECT id, store_url, store_name, scanned_at, saved_at, pages, demo, lang, payload

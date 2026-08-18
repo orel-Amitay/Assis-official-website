@@ -42,7 +42,6 @@ export async function GET(req: Request) {
 
   try {
     const account = accountFromSession(session);
-    await upsertClarityUser(account);
     const draftId = new URL(req.url).searchParams.get("id");
     if (draftId) {
       try {

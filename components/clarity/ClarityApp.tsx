@@ -258,13 +258,14 @@ export default function ClarityApp() {
           const query = params.toString();
           window.history.replaceState(null, "", query ? `/clarity?${query}` : "/clarity");
         }
-      } catch {
+      } catch (error) {
         if (!cancelled) {
           setDrafts([]);
+          const detail = error instanceof Error && error.message && error.message !== "cloud-list" ? error.message : "";
           setError(
             lang === "he"
-              ? "לא הצלחנו לטעון את הסריקות מהחשבון. רעננו את העמוד או התחברו מחדש."
-              : "We couldn’t load the scans for this account. Refresh or sign in again.",
+              ? `לא הצלחנו לטעון את הסריקות מהחשבון. רעננו את העמוד או התחברו מחדש.${detail ? ` (${detail})` : ""}`
+              : `We couldn’t load the scans for this account. Refresh or sign in again.${detail ? ` (${detail})` : ""}`,
           );
         }
       }

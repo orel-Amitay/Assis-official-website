@@ -1,5 +1,4 @@
 import { neon } from "@neondatabase/serverless";
-import { canonicalClarityUserId, isPasswordUserId } from "./identity";
 
 type Sql = ReturnType<typeof neon>;
 
@@ -21,71 +20,6 @@ export function sql() {
   if (!url) throw new Error("DATABASE_URL is missing");
   if (!client) client = neon(url);
   return client;
-}
-
-async function migrateGoogleIdentities(db: Sql) {
-  const rows = (await db`
-    SELECT id, email, name, image
-    FROM clarity_users
-    WHERE email IS NOT NULL
-      AND email <> ''
-      AND id NOT LIKE 'pass:%'
-  `) as {
-    id: string;
-    email: string;
-    name: string | null;
-    image: string | null;
-  }[];
-
-  for (const row of rows) {
-    try {
-      if (isPasswordUserId(row.id)) continue;
-      const nextId = canonicalClarityUserId({ id: row.id, email: row.email });
-      if (!nextId || nextId === row.id) continue;
-      await db`
-        INSERT INTO clarity_users (id, email, name, image, updated_at)
-        VALUES (${nextId}, ${row.email}, ${row.name}, ${row.image}, now())
-        ON CONFLICT (id) DO UPDATE SET
-          email = COALESCE(NULLIF(EXCLUDED.email, ''), clarity_users.email),
-          name = COALESCE(EXCLUDED.name, clarity_users.name),
-          image = COALESCE(EXCLUDED.image, clarity_users.image),
-          updated_at = now()
-      `;
-      await db`
-        INSERT INTO clarity_drafts (
-          id, user_id, store_url, store_name, scanned_at, saved_at, pages, demo, lang, payload, deleted_at
-        )
-        SELECT
-          id, ${nextId}, store_url, store_name, scanned_at, saved_at, pages, demo, lang, payload, deleted_at
-        FROM clarity_drafts
-        WHERE user_id = ${row.id}
-        ON CONFLICT (user_id, id) DO UPDATE SET
-          store_url = EXCLUDED.store_url,
-          store_name = EXCLUDED.store_name,
-          scanned_at = EXCLUDED.scanned_at,
-          saved_at = GREATEST(clarity_drafts.saved_at, EXCLUDED.saved_at),
-          pages = EXCLUDED.pages,
-          demo = EXCLUDED.demo,
-          lang = EXCLUDED.lang,
-          payload = CASE
-            WHEN EXCLUDED.saved_at >= clarity_drafts.saved_at THEN EXCLUDED.payload
-            ELSE clarity_drafts.payload
-          END,
-          deleted_at = CASE
-            WHEN EXCLUDED.deleted_at IS NULL THEN NULL
-            ELSE clarity_drafts.deleted_at
-          END
-      `;
-      await db`DELETE FROM clarity_drafts WHERE user_id = ${row.id}`;
-      const leftover = (await db`
-        SELECT id FROM clarity_drafts WHERE user_id = ${row.id} LIMIT 1
-      `) as { id: string }[];
-      if (leftover[0]) continue;
-      await db`DELETE FROM clarity_users WHERE id = ${row.id}`;
-    } catch {
-      continue;
-    }
-  }
 }
 
 export async function ensureClaritySchema() {
@@ -121,12 +55,11 @@ export async function ensureClaritySchema() {
         WHERE deleted_at IS NULL`;
       await db`ALTER TABLE clarity_users ADD COLUMN IF NOT EXISTS username TEXT`;
       await db`ALTER TABLE clarity_users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
-      await db`CREATE UNIQUE INDEX IF NOT EXISTS clarity_users_username_idx
-        ON clarity_users (username) WHERE username IS NOT NULL`;
       try {
-        await migrateGoogleIdentities(db);
+        await db`CREATE UNIQUE INDEX IF NOT EXISTS clarity_users_username_idx
+          ON clarity_users (username) WHERE username IS NOT NULL`;
       } catch {
-        // Keep serving existing drafts even if identity copy fails.
+        // Duplicate usernames should not block reading drafts.
       }
     })().catch((error) => {
       schemaReady = null;
