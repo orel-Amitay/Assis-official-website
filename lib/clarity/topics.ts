@@ -15,26 +15,23 @@ export type TopicDef = {
 };
 
 export const GROUPS: { id: TopicGroupId; title: string; titleHe: string }[] = [
-  { id: "site_qa", title: "Site Q&A", titleHe: "שאלות תשובות - מהאתר" },
-  { id: "general", title: "General info", titleHe: "מידע כללי" },
+  { id: "brand", title: "Brand", titleHe: "מותג" },
+  { id: "stores", title: "Stores", titleHe: "חנויות" },
+  { id: "community", title: "Club, community & newsletter", titleHe: "חבר מועדון, קהילה וניוזלטר" },
+  { id: "gifts", title: "Gift cards & gift orders", titleHe: "כרטיס מתנה (גיפטקארד) והזמנות מתנה" },
+  { id: "payment", title: "Payment", titleHe: "תשלום" },
+  { id: "orders", title: "Orders", titleHe: "הזמנות" },
   { id: "delivery", title: "Shipping", titleHe: "משלוחים" },
-  { id: "returns", title: "Returns & exchanges", titleHe: "החלפות החזרות" },
-  { id: "warranty", title: "Defects & warranty", titleHe: "פגמים/אחריות" },
-  { id: "promos", title: "Promos & discounts", titleHe: "מבצעים הנחות והטבות" },
-  { id: "products", title: "More product info", titleHe: "מידע נוסף - מוצרים" },
-  { id: "prebuy", title: "Before purchase", titleHe: "לפני רכישה/מכירה" },
-  { id: "influencers", title: "Influencers & coupon codes", titleHe: "משפיעניות וקודי קופון" },
-  { id: "notes", title: "Important notes", titleHe: "דגשים חשובים" },
-  { id: "service", title: "Support hours", titleHe: "שעות פעילות מענה שירות לקוחות וואטסאפ" },
-  { id: "billing", title: "Invoices", titleHe: "חשבוניות" },
-  { id: "integrations", title: "Platforms & integrations", titleHe: "פלטפורמות ואינטגרציות" },
-  { id: "open", title: "Open questions", titleHe: "שאלות פתוחות" },
+  { id: "stock", title: "Stock", titleHe: "מלאי" },
+  { id: "returns", title: "Exchanges / returns", titleHe: "החלפות / החזרות" },
+  { id: "extra", title: "Additional info", titleHe: "מידע נוסף" },
+  { id: "products", title: "Products", titleHe: "מוצרים" },
 ];
 
 export const TOPICS: TopicDef[] = [
   {
     id: "about",
-    group: "general",
+    group: "brand",
     title: "About",
     titleHe: "אודות",
     keywords:
@@ -45,12 +42,12 @@ export const TOPICS: TopicDef[] = [
       "We are [brand], a [category] company founded in [year]. Our story: [short bio]. Customers choose us because [why this brand].",
     exampleCanonicalHe:
       "אנחנו [שם], מותג [קטגוריה] שהוקם ב-[שנה]. הסיפור שלנו: [ביו קצר]. לקוחות בוחרים בנו כי [למה דווקא אתם].",
-    missingEn: "Write who you are, the company story, why you exist, and what happened before — the bio.",
-    missingHe: "כתבו מי אתם, מה הסיפור של החברה, למה דווקא אתם, ומה הביו — איך הכל התחיל.",
+    missingEn: "Write who you are, the company story, why you exist, and what happened before - the bio.",
+    missingHe: "כתבו מי אתם, מה הסיפור של החברה, למה דווקא אתם, ומה הביו - איך הכל התחיל.",
   },
   {
     id: "contact",
-    group: "service",
+    group: "extra",
     title: "Contact & hours",
     titleHe: "יצירת קשר ושעות",
     keywords:
@@ -64,7 +61,7 @@ export const TOPICS: TopicDef[] = [
   },
   {
     id: "locations",
-    group: "general",
+    group: "stores",
     title: "Store & pickup",
     titleHe: "חנות ואיסוף",
     keywords:
@@ -74,11 +71,11 @@ export const TOPICS: TopicDef[] = [
     exampleCanonical: "Our showroom is at [address]. Open [days/hours]. Pickup is available from this location.",
     exampleCanonicalHe: "אולם התצוגה ב-[כתובת]. פתוח ב-[ימים/שעות]. ניתן לאסוף הזמנות מהמקום.",
     missingEn: "If you have a physical store or pickup point, add the address and hours. If not, write: “We are online-only; no walk-in store.”",
-    missingHe: "אם יש סניף או נקודת איסוף — כתבו כתובת ושעות. אם לא: “החנות אונליין בלבד, אין סניף לקבלת קהל.”",
+    missingHe: "אם יש סניף או נקודת איסוף - כתבו כתובת ושעות. אם לא: “החנות אונליין בלבד, אין סניף לקבלת קהל.”",
   },
   {
     id: "payments",
-    group: "general",
+    group: "payment",
     title: "Payment methods",
     titleHe: "אמצעי תשלום",
     keywords:
@@ -92,7 +89,7 @@ export const TOPICS: TopicDef[] = [
   },
   {
     id: "discounts",
-    group: "promos",
+    group: "returns",
     title: "Discounts & codes",
     titleHe: "הנחות וקופונים",
     keywords:
@@ -106,7 +103,7 @@ export const TOPICS: TopicDef[] = [
   },
   {
     id: "gift_cards",
-    group: "promos",
+    group: "gifts",
     title: "Gift cards",
     titleHe: "גיפט קארד",
     keywords: /\b(gift cards?|e[- ]?gift)\b|גיפט\s*קארד|תו\s*שי|שובר\s*מתנה/i,
@@ -115,11 +112,11 @@ export const TOPICS: TopicDef[] = [
     exampleCanonical: "Gift cards are sold on the site, never expire, and can be used on any full-price item.",
     exampleCanonicalHe: "גיפט קארד נמכר באתר, ללא תוקף, וניתן למימוש על כל פריט במחיר מלא.",
     missingEn: "If you sell gift cards, say where to buy them, whether they expire, and what they can’t be used on.",
-    missingHe: "אם יש גיפט קארד — איפה קונים, האם יש תוקף, ועל מה אי אפשר לממש.",
+    missingHe: "אם יש גיפט קארד - איפה קונים, האם יש תוקף, ועל מה אי אפשר לממש.",
   },
   {
     id: "loyalty",
-    group: "promos",
+    group: "community",
     title: "Loyalty / club",
     titleHe: "מועדון לקוחות",
     keywords:
@@ -129,11 +126,11 @@ export const TOPICS: TopicDef[] = [
     exampleCanonical: "Club members earn points on every order and redeem them at checkout. Sign up is free.",
     exampleCanonicalHe: "חברי מועדון צוברים נקודות בכל הזמנה ומממשים בקופה. ההצטרפות חינם.",
     missingEn: "If you have a club, explain how to join, how points are earned, and how they’re redeemed. If not, skip this.",
-    missingHe: "אם יש מועדון — איך מצטרפים, איך צוברים, ואיך מממשים. אם אין, אפשר להשאיר ריק.",
+    missingHe: "אם יש מועדון - איך מצטרפים, איך צוברים, ואיך מממשים. אם אין, אפשר להשאיר ריק.",
   },
   {
     id: "hot_updates",
-    group: "notes",
+    group: "extra",
     title: "Current notices",
     titleHe: "עדכונים חמים",
     keywords:
@@ -147,7 +144,7 @@ export const TOPICS: TopicDef[] = [
   },
   {
     id: "customization",
-    group: "site_qa",
+    group: "products",
     title: "Custom orders",
     titleHe: "התאמה אישית",
     keywords:
@@ -199,7 +196,7 @@ export const TOPICS: TopicDef[] = [
     exampleCanonical: "Self-pickup is free from [location]. Orders are ready within X business days. Bring ID.",
     exampleCanonicalHe: "איסוף עצמי חינם מ-[מיקום]. ההזמנה מוכנה תוך X ימי עסקים. יש להביא תעודה מזהה.",
     missingEn: "If pickup exists, write where, when it’s ready, and whether it’s free. If not: “We don’t offer self-pickup.”",
-    missingHe: "אם יש איסוף עצמי — איפה, מתי מוכן, והאם חינם. אם אין: “אין איסוף עצמי.”",
+    missingHe: "אם יש איסוף עצמי - איפה, מתי מוכן, והאם חינם. אם אין: “אין איסוף עצמי.”",
   },
   {
     id: "tracking",
@@ -227,7 +224,7 @@ export const TOPICS: TopicDef[] = [
     exampleCanonical: "Custom items are produced within X hours/days after approval. In-stock items ship within Y business days.",
     exampleCanonicalHe: "פריט בהתאמה מיוצר תוך X שעות/ימים אחרי אישור. פריט במלאי יוצא תוך Y ימי עסקים.",
     missingEn: "Split production time from shipping time. Custom vs in-stock must be two different sentences.",
-    missingHe: "הפרידו זמן ייצור מזמן משלוח. התאמה אישית ומלאי — שני משפטים שונים.",
+    missingHe: "הפרידו זמן ייצור מזמן משלוח. התאמה אישית ומלאי - שני משפטים שונים.",
   },
   {
     id: "returns",
@@ -267,12 +264,12 @@ export const TOPICS: TopicDef[] = [
     suggestedPath: "/policies/refund-policy",
     exampleCanonical: "Approved returns are refunded to the original payment method within 10 business days. No store credit unless requested.",
     exampleCanonicalHe: "החזר מאושר חוזר לאמצעי התשלום המקורי תוך 10 ימי עסקים. אין זיכוי אלא אם הלקוח ביקש.",
-    missingEn: "Choose one rule: full refund to the original method, or store credit — and how many days it takes.",
-    missingHe: "בחרו כלל אחד: החזר מלא לאמצעי המקורי, או זיכוי — ותוך כמה ימים.",
+    missingEn: "Choose one rule: full refund to the original method, or store credit - and how many days it takes.",
+    missingHe: "בחרו כלל אחד: החזר מלא לאמצעי המקורי, או זיכוי - ותוך כמה ימים.",
   },
   {
     id: "cancellations",
-    group: "returns",
+    group: "orders",
     title: "Cancellations",
     titleHe: "ביטול הזמנה",
     keywords:
@@ -280,13 +277,13 @@ export const TOPICS: TopicDef[] = [
     pathHints: /cancel|ביטול/i,
     suggestedPath: "/pages/cancellations",
     exampleCanonical: "Orders can be cancelled until they ship. After shipping, use the return process.",
-    exampleCanonicalHe: "ניתן לבטל הזמנה עד שהיא יוצאת למשלוח. אחרי השילוח — דרך תהליך ההחזרה.",
+    exampleCanonicalHe: "ניתן לבטל הזמנה עד שהיא יוצאת למשלוח. אחרי השילוח - דרך תהליך ההחזרה.",
     missingEn: "Write the cutoff: can they cancel before shipping? After that, returns only.",
-    missingHe: "כתבו עד מתי אפשר לבטל. אחרי יציאה למשלוח — רק החזרה.",
+    missingHe: "כתבו עד מתי אפשר לבטל. אחרי יציאה למשלוח - רק החזרה.",
   },
   {
     id: "warranty",
-    group: "warranty",
+    group: "returns",
     title: "Warranty",
     titleHe: "אחריות",
     keywords: /\b(warrant(?:y|ies)|guarantee|guaranteed)\b|אחריות|ערבות/i,
@@ -295,7 +292,7 @@ export const TOPICS: TopicDef[] = [
     exampleCanonical: "Products include a 12-month warranty against manufacturing defects. Wear and tear is not covered.",
     exampleCanonicalHe: "למוצרים אחריות 12 חודשים על פגם ייצור. בלאי רגיל אינו כלול.",
     missingEn: "If you offer warranty, say for how long and what it covers. If not: “No additional warranty beyond consumer law.”",
-    missingHe: "אם יש אחריות — לכמה זמן ועל מה. אם אין: “אין אחריות מעבר לחוק הגנת הצרכן.”",
+    missingHe: "אם יש אחריות - לכמה זמן ועל מה. אם אין: “אין אחריות מעבר לחוק הגנת הצרכן.”",
   },
   {
     id: "courier",
@@ -313,7 +310,7 @@ export const TOPICS: TopicDef[] = [
   },
   {
     id: "stock",
-    group: "prebuy",
+    group: "stock",
     title: "Stock & preorder",
     titleHe: "מלאי והזמנה מוקדמת",
     keywords:
@@ -327,7 +324,7 @@ export const TOPICS: TopicDef[] = [
   },
   {
     id: "order",
-    group: "prebuy",
+    group: "orders",
     title: "Order changes",
     titleHe: "הזמנה ושינויים",
     keywords:
@@ -341,7 +338,7 @@ export const TOPICS: TopicDef[] = [
   },
   {
     id: "invoices",
-    group: "billing",
+    group: "payment",
     title: "Invoices",
     titleHe: "חשבוניות",
     keywords:
@@ -349,13 +346,13 @@ export const TOPICS: TopicDef[] = [
     pathHints: /invoice|receipt|חשבונית|קבלה/i,
     suggestedPath: "/pages/faq",
     exampleCanonical: "The invoice is emailed automatically after delivery, to the address used at checkout. Check spam if it’s missing.",
-    exampleCanonicalHe: "החשבונית נשלחת אוטומטית למייל שהוזן בהזמנה, אחרי קבלת המשלוח. אם לא הגיעה — בדקו בספאם.",
+    exampleCanonicalHe: "החשבונית נשלחת אוטומטית למייל שהוזן בהזמנה, אחרי קבלת המשלוח. אם לא הגיעה - בדקו בספאם.",
     missingEn: "When is the invoice sent, to which email, and what to do if it didn’t arrive?",
     missingHe: "מתי נשלחת חשבונית, לאיזה מייל, ומה עושים אם לא הגיעה?",
   },
   {
     id: "defects",
-    group: "warranty",
+    group: "returns",
     title: "Defects",
     titleHe: "במקרה של פגם",
     keywords:
@@ -395,7 +392,7 @@ export const TOPICS: TopicDef[] = [
     exampleCanonical:
       "1) Customer contacts WhatsApp. 2) We check eligibility. 3) We arrange pickup or they ship it back. 4) After we receive it, we issue the refund.",
     exampleCanonicalHe:
-      "1) הלקוח פונה בוואטסאפ. 2) בודקים זכאות. 3) מתאמים איסוף או שהלקוח שולח. 4) אחרי קבלה — ממשיכים להחזר כספי.",
+      "1) הלקוח פונה בוואטסאפ. 2) בודקים זכאות. 3) מתאמים איסוף או שהלקוח שולח. 4) אחרי קבלה - ממשיכים להחזר כספי.",
     missingEn: "Write the return steps, and exactly what to collect from the customer to start and finish.",
     missingHe: "כתבו את שלבי ההחזרה, ומה בדיוק לאסוף מהלקוח כדי להתחיל ולסיים.",
   },
@@ -433,7 +430,7 @@ export const TOPICS: TopicDef[] = [
   },
   {
     id: "process_cancel",
-    group: "returns",
+    group: "orders",
     title: "Cancellation process",
     titleHe: "תהליך ביטול הזמנה",
     keywords:
@@ -441,15 +438,15 @@ export const TOPICS: TopicDef[] = [
     pathHints: /cancel|ביטול|faq/i,
     suggestedPath: "/pages/cancellations",
     exampleCanonical:
-      "1) Customer sends order number on WhatsApp. 2) If it hasn’t shipped / production hasn’t started — cancel. 3) If it already shipped — use the return process.",
+      "1) Customer sends order number on WhatsApp. 2) If it hasn’t shipped / production hasn’t started - cancel. 3) If it already shipped - use the return process.",
     exampleCanonicalHe:
-      "1) הלקוח שולח מספר הזמנה בוואטסאפ. 2) אם עוד לא יצאה / לא התחיל ייצור — מבטלים. 3) אם כבר יצאה — עוברים לתהליך החזרה.",
+      "1) הלקוח שולח מספר הזמנה בוואטסאפ. 2) אם עוד לא יצאה / לא התחיל ייצור - מבטלים. 3) אם כבר יצאה - עוברים לתהליך החזרה.",
     missingEn: "Write the cancellation steps and what to collect (order number, reason, before/after shipping).",
     missingHe: "כתבו את שלבי הביטול ומה לאסוף (מספר הזמנה, סיבה, לפני/אחרי משלוח).",
   },
   {
     id: "process_defect",
-    group: "warranty",
+    group: "returns",
     title: "Defect claim process",
     titleHe: "תהליך פגם / אחריות",
     keywords:
@@ -465,7 +462,7 @@ export const TOPICS: TopicDef[] = [
   },
   {
     id: "integrations",
-    group: "integrations",
+    group: "extra",
     title: "Platforms & integrations",
     titleHe: "פלטפורמות ואינטגרציות",
     keywords:
@@ -508,7 +505,7 @@ export const TOPICS: TopicDef[] = [
 ];
 
 export const POLICY_PATH_HINT =
-  /shipping|delivery|returns?|refund|exchange|faq|policy|policies|warranty|contact|about|help|משלוח|החזר|החלפ|שאלות|מדיניות|אחריות|צור[-_]?קשר|pickup|tracking|gift|loyalty|rewards|payment|cancel|terms|stores?|locations?|סניפ|איסוף|מעקב|קופון|תקנון|אודות|about-us|our-story|customer-service|contact-us|promotions?|club|showroom|ביטול|התאמה|ייצור|פייטר|custom/i;
+  /shipping|delivery|returns?|refund|exchange|faq|policy|policies|warranty|contact|about|help|משלוח|החזר|החלפ|שאלות|מדיניות|אחריות|צור[-_]?קשר|pickup|tracking|gift|loyalty|rewards|payment|cancel|terms|stores?|locations?|סניפ|איסוף|מעקב|קופון|תקנון|אודות|about-us|our-story|customer-service|contact-us|promotions?|club|showroom|ביטול|התאמה|ייצור|פייטר|custom|wholesale|affiliate|size[-_]?guide|sizing|newsletter|studio|dealers?|stockists?/i;
 
 export const SKIP_PATH =
   /\/(cart|account|search|checkout|checkouts|apps|cdn|carts|reviews?|testimonials?|comments?)\b|\/(loox|yotpo|judge[\s.-]?me)\b|ביקורות|המלצות[-_]?לקוחות|תגובות|\.(?:jpe?g|png|gif|webp|svg|css|js|woff2?|mp4|zip|pdf)(\?|$)/i;
@@ -600,14 +597,48 @@ export const COMMON_POLICY_PATHS = [
   "/מעקב-משלוח",
   "/pages/מעקב",
   "/pages/תהליך-החזרה",
+  "/pages/size-guide",
+  "/pages/size-chart",
+  "/pages/sizing",
+  "/pages/gift-card",
+  "/pages/gift-cards",
+  "/pages/wholesale",
+  "/pages/affiliate",
+  "/pages/affiliates",
+  "/pages/ambassadors",
+  "/pages/rewards",
+  "/pages/vip",
+  "/pages/care",
+  "/pages/materials",
+  "/pages/our-materials",
+  "/pages/sustainability",
+  "/pages/stores",
+  "/pages/store-locator",
+  "/pages/showroom",
+  "/pages/studio",
+  "/pages/dealers",
+  "/pages/stockists",
+  "/pages/newsletter",
+  "/pages/שאלות-נפוצות",
+  "/pages/שאלות",
+  "/pages/מידות",
+  "/pages/טבלת-מידות",
+  "/pages/מדריך-מידות",
+  "/pages/גיפטקארד",
+  "/pages/כרטיס-מתנה",
+  "/pages/סיטונאות",
+  "/pages/משווקים",
+  "/pages/חנויות",
+  "/policies/contact-information",
+  "/products/gift-card",
+  "/policies/legal-notice",
+  "/policies/subscription-policy",
   "/blogs/news",
   "/blogs/blog",
 ];
 
 export function groupById(id: TopicGroupId) {
-  const group = GROUPS.find((item) => item.id === id);
-  if (!group) throw new Error(`Unknown group: ${id}`);
-  return group;
+  return GROUPS.find((item) => item.id === id) || GROUPS.find((item) => item.id === "extra")!;
 }
 
 export function topicById(id: TopicId): TopicDef {

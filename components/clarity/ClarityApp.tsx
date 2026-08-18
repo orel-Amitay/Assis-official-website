@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { COPY, type ClarityLang } from "@/lib/clarity/copy";
+import { shortDashes } from "@/lib/clarity/text";
 import { demoMraDraft } from "@/lib/clarity/demo";
 import {
   deleteCloudDraft,
@@ -15,7 +16,6 @@ import {
 import {
   clearLocalClarityData,
   deleteDraft,
-  draftFileName,
   draftIdFor,
   listDrafts,
   loadDraft,
@@ -42,11 +42,16 @@ import type {
 } from "@/lib/clarity/types";
 import ClarityShell from "./ClarityShell";
 import DraftScreen from "./DraftScreen";
-import ScanScreen from "./ScanScreen";
+import ScanScreen, { type ScanFillProgress } from "./ScanScreen";
 import StartScreen from "./StartScreen";
 
 type Step = "start" | "scanning" | "review";
 type CloudSave = "idle" | "saving" | "saved" | "error";
+
+function reviewHash(state: ReviewState | null, lang: ClarityLang) {
+  if (!state) return "";
+  return JSON.stringify({ lang, customQas: state.customQas, decisions: state.decisions });
+}
 type CategoryScanPayload = {
   claims?: ExtractedClaim[];
   suggestions?: Array<{ topicId: TopicId; qaId: string; answer: string; missing: boolean }>;
@@ -55,6 +60,81 @@ type CategoryScanPayload = {
   usedAi?: boolean;
   error?: string;
 };
+
+type ScanApiPayload = ScanResult & {
+  error?: string;
+  code?: string;
+  aiAnswers?: Array<{ topicId: TopicId; qaId: string; answer: string; missing?: boolean }>;
+  openQas?: Array<{ question: string; answer: string }>;
+  usedAi?: boolean;
+};
+
+async function readScanResponse(
+  response: Response,
+  onFill: (fill: ScanFillProgress) => void,
+): Promise<ScanApiPayload> {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("ndjson") || !response.body) {
+    return (await response.json()) as ScanApiPayload;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let donePayload: ScanApiPayload | null = null;
+  const applyEvent = (line: string) => {
+    if (!line.trim()) return "continue";
+    let event: {
+      type?: string;
+      phase?: string;
+      groupTitle?: string;
+      done?: number;
+      total?: number;
+      etaSec?: number;
+      result?: ScanApiPayload;
+      error?: string;
+      code?: string;
+    };
+    try {
+      event = JSON.parse(line) as typeof event;
+    } catch {
+      return "continue";
+    }
+    if (event.type === "phase" && event.phase === "fill") {
+      onFill({ groupTitle: "", done: 0, total: 0, etaSec: 0 });
+    }
+    if (event.type === "fill") {
+      onFill({
+        groupTitle: String(event.groupTitle || ""),
+        done: Number(event.done || 0),
+        total: Number(event.total || 0),
+        etaSec: Number(event.etaSec || 0),
+      });
+    }
+    if (event.type === "done" && event.result) donePayload = event.result;
+    if (event.type === "error") {
+      return { error: event.error, code: event.code } as ScanApiPayload;
+    }
+    return "continue";
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+    for (const line of lines) {
+      const result = applyEvent(line);
+      if (result && result !== "continue") return result;
+    }
+  }
+  buffer += decoder.decode();
+  const last = applyEvent(buffer);
+  if (last && last !== "continue") return last;
+  if (donePayload) return donePayload;
+  return { error: "Scan failed", code: "failed" } as ScanApiPayload;
+}
 
 function scanErrorMessage(lang: ClarityLang, code?: string, fallback?: string) {
   const t = COPY[lang];
@@ -99,6 +179,7 @@ export default function ClarityApp() {
   const [step, setStep] = useState<Step>("start");
   const [url, setUrl] = useState(presetUrl);
   const [scanStep, setScanStep] = useState(0);
+  const [scanFill, setScanFill] = useState<ScanFillProgress | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [state, setState] = useState<ReviewState | null>(null);
   const [error, setError] = useState("");
@@ -109,6 +190,23 @@ export default function ClarityApp() {
   const [categoryScanId, setCategoryScanId] = useState<TopicGroupId | null>(null);
   const [categoryScanNote, setCategoryScanNote] = useState("");
   const fullCloudKey = useRef("");
+  const persistNowRef = useRef<(options?: { silent?: boolean; full?: boolean; keepalive?: boolean }) => Promise<void>>(
+    async () => {},
+  );
+  const resultRef = useRef(result);
+  const stateRef = useRef(state);
+  const langRef = useRef(lang);
+  const signedInRef = useRef(signedIn);
+  const saveBusyRef = useRef(false);
+  const saveAgainRef = useRef(false);
+  const saveFullRef = useRef(false);
+  const saveFailRef = useRef(0);
+  const lastPersistedHash = useRef("");
+  const lastResultKey = useRef("");
+  resultRef.current = result;
+  stateRef.current = state;
+  langRef.current = lang;
+  signedInRef.current = signedIn;
 
   useLayoutEffect(() => {
     const html = document.documentElement;
@@ -135,6 +233,7 @@ export default function ClarityApp() {
       if (!signedIn) {
         if (!cancelled) {
           setDrafts([]);
+          setError("");
           setStep("start");
           setResult(null);
           setState(null);
@@ -143,9 +242,9 @@ export default function ClarityApp() {
       }
 
       try {
-        clearLocalClarityData();
         const cloud = await fetchCloudDrafts();
         if (cancelled) return;
+        setError("");
         setDrafts(cloud.drafts);
         setIsAdmin(cloud.admin);
         setStep("start");
@@ -159,8 +258,16 @@ export default function ClarityApp() {
           const query = params.toString();
           window.history.replaceState(null, "", query ? `/clarity?${query}` : "/clarity");
         }
-      } catch {
-        if (!cancelled) setDrafts([]);
+      } catch (error) {
+        if (!cancelled) {
+          setDrafts([]);
+          const detail = error instanceof Error && error.message && error.message !== "cloud-list" ? error.message : "";
+          setError(
+            lang === "he"
+              ? `לא הצלחנו לטעון את הסריקות מהחשבון. רעננו את העמוד או התחברו מחדש.${detail ? ` (${detail})` : ""}`
+              : `We couldn’t load the scans for this account. Refresh or sign in again.${detail ? ` (${detail})` : ""}`,
+          );
+        }
       }
     }
 
@@ -175,20 +282,42 @@ export default function ClarityApp() {
     if (!result || !state) return;
     if (status === "loading") return;
     window.localStorage.setItem(storageKey(result.storeUrl, session?.user?.id), JSON.stringify(state));
+    if (reviewHash(state, lang) === lastPersistedHash.current) return;
+    saveFailRef.current = 0;
     const timer = window.setTimeout(() => {
-      void persistDraft({ silent: true });
-    }, 400);
+      void persistNowRef.current({ silent: true });
+    }, 0);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, state, lang, signedIn, status]);
 
   useEffect(() => {
+    const flush = () => {
+      void persistNowRef.current({ silent: true, keepalive: true });
+    };
+    const onVis = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
+
+  useEffect(() => {
     if (step !== "scanning") return;
+    if (scanFill) {
+      setScanStep(COPY.en.scanSteps.length - 1);
+      return;
+    }
+    const lastCrawl = COPY.en.scanSteps.length - 2;
     const id = window.setInterval(() => {
-      setScanStep((i) => Math.min(i + 1, COPY.en.scanSteps.length - 1));
+      setScanStep((i) => Math.min(i + 1, lastCrawl));
     }, 1100);
     return () => window.clearInterval(id);
-  }, [step]);
+  }, [step, scanFill]);
 
   function toggleLang() {
     setLang((prev) => {
@@ -217,105 +346,136 @@ export default function ClarityApp() {
     setStep("review");
     if (options.fromCloud) {
       fullCloudKey.current = `${next.result.storeUrl}|${next.result.scannedAt}`;
+      lastPersistedHash.current = reviewHash(next.state, draft.lang);
       setCloudSave("saved");
     }
     if (options.replaceUrl !== false) rememberUrl(next.result.storeUrl, draft.id);
   }
 
-  async function persistDraft(options: { silent?: boolean } = {}) {
-    if (!result || !state) return;
-    let local = slimDraft({
-      id: draftIdFor(result.storeUrl),
-      savedAt: new Date().toISOString(),
-      lang,
-      result,
-      state,
-    });
-    try {
-      local = slimDraft(saveDraft({ result, state, lang }));
-    } catch {
-      /* localStorage quota should not block saving to the account */
-    }
-    setSavedAt(local.savedAt);
-    rememberUrl(result.storeUrl, local.id);
-    if (!signedIn) {
-      setCloudSave("idle");
-      setDrafts(listDrafts());
+  async function persistDraft(options: { silent?: boolean; full?: boolean; keepalive?: boolean } = {}) {
+    if (!resultRef.current || !stateRef.current) return;
+    if (options.full) saveFullRef.current = true;
+    if (saveBusyRef.current) {
+      saveAgainRef.current = true;
       return;
     }
-    const scanKey = `${result.storeUrl}|${result.scannedAt}`;
-    setCloudSave("saving");
+    saveBusyRef.current = true;
     try {
-      if (fullCloudKey.current === scanKey) {
-        try {
-          const patched = await patchCloudDraftState(local.id, local.state, local.lang);
-          if (patched.savedAt) setSavedAt(patched.savedAt);
-        } catch (error) {
-          if (error instanceof Error && error.message === "need-full") {
-            await putCloudDraft(slimDraft(local));
-            fullCloudKey.current = scanKey;
-          } else {
-            throw error;
-          }
+      do {
+        saveAgainRef.current = false;
+        const snapResult = resultRef.current;
+        const snapState = stateRef.current;
+        const snapLang = langRef.current;
+        if (!snapResult || !snapState) break;
+        const hash = reviewHash(snapState, snapLang);
+        if (hash === lastPersistedHash.current && !options.full && !saveFullRef.current && !options.keepalive) {
+          setCloudSave("saved");
+          continue;
         }
-      } else {
-        const saved = await putCloudDraft(slimDraft(local));
-        setSavedAt(saved.savedAt);
-        fullCloudKey.current = scanKey;
-      }
-      setCloudSave("saved");
-      try {
-        const listed = await fetchCloudDrafts();
-        setDrafts(listed.drafts);
-        setIsAdmin(listed.admin);
-      } catch {
-        /* draft is saved even if the list refresh fails */
-      }
-    } catch {
-      setCloudSave("error");
-      setDrafts(signedIn ? [] : listDrafts());
-      if (!options.silent) {
-        setError(
-          lang === "he"
-            ? "לא הצלחנו לשמור את הטיוטה לחשבון. התחברו ושמרו שוב."
-            : "Couldn’t save the draft to your account. Sign in and save again.",
-        );
+        let local = slimDraft({
+          id: draftIdFor(snapResult.storeUrl),
+          savedAt: new Date().toISOString(),
+          lang: snapLang,
+          result: snapResult,
+          state: snapState,
+        });
+        try {
+          local = slimDraft(saveDraft({ result: snapResult, state: snapState, lang: snapLang }));
+        } catch {
+          /* localStorage quota should not block saving to the account */
+        }
+        setSavedAt(local.savedAt);
+        rememberUrl(snapResult.storeUrl, local.id);
+        if (!signedInRef.current) {
+          lastPersistedHash.current = hash;
+          setCloudSave("saved");
+          setDrafts(listDrafts());
+          continue;
+        }
+        const scanKey = `${snapResult.storeUrl}|${snapResult.scannedAt}`;
+        const resultKey = `${scanKey}|${snapResult.topics.reduce((sum, topic) => sum + topic.claims.length, 0)}|${
+          snapResult.pagesScanned.length
+        }`;
+        const needFull =
+          Boolean(options.full) ||
+          saveFullRef.current ||
+          fullCloudKey.current !== scanKey ||
+          lastResultKey.current !== resultKey;
+        setCloudSave("saving");
+        try {
+          if (!needFull) {
+            try {
+              const patched = await patchCloudDraftState(local.id, local.state, local.lang, {
+                keepalive: options.keepalive,
+              });
+              if (patched.savedAt) setSavedAt(patched.savedAt);
+            } catch (error) {
+              if (error instanceof Error && error.message === "need-full") {
+                await putCloudDraft(slimDraft(local), { keepalive: options.keepalive });
+                fullCloudKey.current = scanKey;
+                lastResultKey.current = resultKey;
+                saveFullRef.current = false;
+              } else {
+                throw error;
+              }
+            }
+          } else {
+            const saved = await putCloudDraft(slimDraft(local), { keepalive: options.keepalive });
+            setSavedAt(saved.savedAt);
+            fullCloudKey.current = scanKey;
+            lastResultKey.current = resultKey;
+            saveFullRef.current = false;
+          }
+          lastPersistedHash.current = hash;
+          saveFailRef.current = 0;
+          setCloudSave("saved");
+          if (!options.silent) {
+            try {
+              const listed = await fetchCloudDrafts();
+              setDrafts(listed.drafts);
+              setIsAdmin(listed.admin);
+            } catch {
+              /* draft is saved even if the list refresh fails */
+            }
+          }
+        } catch {
+          saveFailRef.current += 1;
+          if (saveFailRef.current < 4) saveAgainRef.current = true;
+          setCloudSave("error");
+        }
+      } while (saveAgainRef.current);
+    } finally {
+      saveBusyRef.current = false;
+      if (saveAgainRef.current) {
+        void persistDraft({ silent: true });
       }
     }
   }
 
-  function downloadCurrentDraft() {
-    if (!result || !state) return;
-    const draft = saveDraft({ result, state, lang });
-    setSavedAt(draft.savedAt);
-    setDrafts(listDrafts());
-    const blob = new Blob([`${JSON.stringify(draft, null, 2)}\n`], { type: "application/json;charset=utf-8" });
-    const href = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = href;
-    a.download = draftFileName(draft);
-    a.click();
-    URL.revokeObjectURL(href);
-  }
+  persistNowRef.current = persistDraft;
 
   async function resumeDraft(id: string) {
-    if (signedIn) {
-      const cloud = await fetchCloudDraft(id);
-      if (!cloud) {
-        const listed = await fetchCloudDrafts().catch(() => ({ drafts: [] as ClarityDraftMeta[], admin: false }));
-        setDrafts(listed.drafts);
-        setIsAdmin(listed.admin);
+    setError("");
+    try {
+      if (signedIn) {
+        const cloud = await fetchCloudDraft(id);
+        if (!cloud) {
+          setError(lang === "he" ? "לא הצלחנו לפתוח את השאלון." : "That questionnaire couldn’t be opened.");
+          return;
+        }
+        openDraft(cloud, { fromCloud: true });
         return;
       }
-      openDraft(cloud, { fromCloud: true });
-      return;
+      const draft = loadDraft(id);
+      if (!draft) {
+        setDrafts(listDrafts());
+        setError(lang === "he" ? "לא הצלחנו לפתוח את השאלון." : "That questionnaire couldn’t be opened.");
+        return;
+      }
+      openDraft(draft);
+    } catch {
+      setError(lang === "he" ? "לא הצלחנו לפתוח את השאלון." : "That questionnaire couldn’t be opened.");
     }
-    const draft = loadDraft(id);
-    if (!draft) {
-      setDrafts(listDrafts());
-      return;
-    }
-    openDraft(draft);
   }
 
   async function removeDraft(id: string) {
@@ -371,6 +531,7 @@ export default function ClarityApp() {
     const nextUrl = options.nextUrl ?? url;
     setError("");
     setScanStep(0);
+    setScanFill(null);
     setStep("scanning");
     setResult(null);
     setState(null);
@@ -393,21 +554,18 @@ export default function ClarityApp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: nextUrl, demo: false, lang }),
       });
-      const data = (await response.json()) as ScanResult & {
-        error?: string;
-        code?: string;
-        aiAnswers?: Array<{ topicId: TopicId; qaId: string; answer: string; missing?: boolean }>;
-        openQas?: Array<{ question: string; answer: string }>;
-        usedAi?: boolean;
-      };
-      if (!response.ok) throw new Error(scanErrorMessage(lang, data.code, data.error));
+      const data = await readScanResponse(response, (fill) => setScanFill(fill));
+      if (!response.ok && !data.storeUrl) throw new Error(scanErrorMessage(lang, data.code, data.error));
+      if (data.error && !data.storeUrl) throw new Error(scanErrorMessage(lang, data.code, data.error));
       const next = hydrateClarity(data, loadReviewState(data, session?.user?.id));
       const withAi = applyOpenQuestions(
-        applyAiAnswers(next.state, data.aiAnswers || []),
+        applyAiAnswers(next.state, data.aiAnswers || [], data.pagesScanned || [], next.result),
         data.openQas || [],
         templateQas().map((item) => item.question),
       );
       const withScan = { ...withAi, customQas: applyScanRecommendations(next.result, withAi) };
+      lastPersistedHash.current = "";
+      saveFullRef.current = true;
       setResult(next.result);
       setState(autoApproveFound(next.result, withScan));
       setUrl(next.result.storeUrl);
@@ -462,9 +620,6 @@ export default function ClarityApp() {
       const claimDecisions = { ...topicState.claimDecisions, [claimId]: "rejected" as const };
       const qaAnswers = { ...(topicState.qaAnswers || {}) };
       if (claim && qaAnswers[qaId] === claim.text) qaAnswers[qaId] = "";
-      const allRejected =
-        (block?.claims.length || 0) > 0 &&
-        (block?.claims || []).every((item) => claimDecisions[item.id] === "rejected");
       return {
         ...prev,
         decisions: {
@@ -473,7 +628,7 @@ export default function ClarityApp() {
             ...topicState,
             claimDecisions,
             qaAnswers,
-            qaSkip: { ...(topicState.qaSkip || {}), [qaId]: allRejected },
+            qaSkip: { ...(topicState.qaSkip || {}), [qaId]: false },
             notRelevant: false,
           },
         },
@@ -491,10 +646,27 @@ export default function ClarityApp() {
           ...prev.decisions,
           [topicId]: {
             ...topicState,
-            qaAnswers: { ...(topicState.qaAnswers || {}), [qaId]: text },
+            qaAnswers: { ...(topicState.qaAnswers || {}), [qaId]: shortDashes(text) },
             qaSkip: { ...(topicState.qaSkip || {}), [qaId]: false },
             canonicalText: topicState.canonicalText || text,
             notRelevant: false,
+          },
+        },
+      };
+    });
+  }
+
+  function setQaQuestion(topicId: TopicId, qaId: string, text: string) {
+    setState((prev) => {
+      if (!prev) return prev;
+      const topicState = prev.decisions[topicId] || emptyTopicState();
+      return {
+        ...prev,
+        decisions: {
+          ...prev.decisions,
+          [topicId]: {
+            ...topicState,
+            qaQuestions: { ...(topicState.qaQuestions || {}), [qaId]: shortDashes(text) },
           },
         },
       };
@@ -507,6 +679,7 @@ export default function ClarityApp() {
       const topicState = prev.decisions[topicId] || emptyTopicState();
       const claimDecisions = { ...topicState.claimDecisions };
       if (claimId) claimDecisions[claimId] = "approved";
+      else claimDecisions[`qa:${qaId}`] = "approved";
       return {
         ...prev,
         decisions: {
@@ -514,7 +687,7 @@ export default function ClarityApp() {
           [topicId]: {
             ...topicState,
             claimDecisions,
-            qaAnswers: { ...(topicState.qaAnswers || {}), [qaId]: text },
+            qaAnswers: { ...(topicState.qaAnswers || {}), [qaId]: shortDashes(text) },
             qaSkip: { ...(topicState.qaSkip || {}), [qaId]: false },
             canonicalText: text.trim() || topicState.canonicalText,
             notRelevant: false,
@@ -572,8 +745,9 @@ export default function ClarityApp() {
             question: "",
             answer: "",
             detailName:
-              detailName?.trim() || (groupId === "open" ? "שאלות פתוחות" : "שאלות נוספות"),
+              detailName?.trim() || (groupId === "extra" ? "מידע נוסף" : "שאלות נוספות"),
             forCustomers: section !== "process",
+            keepVisible: true,
           },
         ],
       };
@@ -585,7 +759,16 @@ export default function ClarityApp() {
       if (!prev) return prev;
       return {
         ...prev,
-        customQas: (prev.customQas || []).map((item) => (item.id === id ? { ...item, ...patch } : item)),
+        customQas: (prev.customQas || []).map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                ...patch,
+                ...(typeof patch.answer === "string" ? { answer: shortDashes(patch.answer) } : {}),
+                ...(typeof patch.question === "string" ? { question: shortDashes(patch.question) } : {}),
+              }
+            : item,
+        ),
       };
     });
   }
@@ -646,23 +829,43 @@ export default function ClarityApp() {
         }),
       };
       setResult(mergedResult);
+      saveFullRef.current = true;
+      lastPersistedHash.current = "";
 
       setState((prev) => {
         if (!prev) return prev;
-        const next = { ...prev, decisions: { ...prev.decisions } };
+        const next = {
+          ...prev,
+          decisions: { ...prev.decisions },
+          customQas: (prev.customQas || []).map((qa) =>
+            qa.groupId === groupId
+              ? {
+                  ...qa,
+                  answer: "",
+                  suggestedAnswer: "",
+                  skipped: false,
+                  notApplicable: false,
+                  verdict: "pending" as const,
+                  sourceUrl: undefined,
+                  sourceTitle: undefined,
+                  sourcePath: undefined,
+                  sourceQuote: undefined,
+                }
+              : qa,
+          ),
+        };
+        for (const topic of mergedResult.topics.filter((item) => item.group === groupId)) {
+          next.decisions[topic.id] = emptyTopicState();
+        }
         for (const claim of claims) {
           const topicState = next.decisions[claim.topicId] || emptyTopicState();
-          if (topicState.claimDecisions[claim.id]) {
-            next.decisions[claim.topicId] = topicState;
-            continue;
-          }
           next.decisions[claim.topicId] = {
             ...topicState,
             claimDecisions: { ...topicState.claimDecisions, [claim.id]: "pending" },
           };
         }
         const withAi = applyOpenQuestions(
-          applyAiAnswers(next, suggestions),
+          applyAiAnswers(next, suggestions, mergedResult.pagesScanned || [], mergedResult),
           data.openQas || [],
           templateQas().map((item) => item.question),
         );
@@ -710,9 +913,16 @@ export default function ClarityApp() {
             onResumeDraft={(id) => void resumeDraft(id)}
             onDeleteDraft={(id) => void removeDraft(id)}
             onImportDraft={importDraftFile}
-            isAdmin={isAdmin}
+            isAdmin={
+              isAdmin ||
+              String(session?.user?.email || "")
+                .trim()
+                .toLowerCase()
+                .endsWith("@assis.care")
+            }
+            error={error}
           />
-          {error ? (
+          {error && step !== "start" ? (
             <div className="mx-auto max-w-xl px-4 pb-12 sm:px-8">
               <div className="rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4">
                 <p className="text-sm font-semibold text-amber-900">{COPY[lang].errorTitle}</p>
@@ -742,7 +952,7 @@ export default function ClarityApp() {
       ) : null}
 
       {step === "scanning" ? (
-        <ScanScreen lang={lang} stepIndex={scanStep} storeLabel={url} />
+        <ScanScreen lang={lang} stepIndex={scanStep} storeLabel={url} fill={scanFill} />
       ) : null}
 
       {step === "review" && result && state ? (
@@ -755,6 +965,7 @@ export default function ClarityApp() {
           onPickQa={pickQa}
           onRejectQa={rejectQaClaim}
           onQaAnswer={setQaAnswer}
+          onQaQuestion={setQaQuestion}
           onSaveEdit={saveQaEdit}
           onSkipQa={skipQa}
           onUnskipQa={unskipQa}
@@ -763,7 +974,6 @@ export default function ClarityApp() {
           onToggleQaCollect={toggleQaCollect}
           signedIn={signedIn}
           onSaveDraft={() => void persistDraft()}
-          onDownloadDraft={downloadCurrentDraft}
           onBack={reset}
           onRescan={reset}
           onCategoryScan={(groupId) => void runCategoryScan(groupId)}

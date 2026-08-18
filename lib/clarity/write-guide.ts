@@ -36,12 +36,20 @@ const DETAIL_ALIASES: Array<{ test: RegExp; topicId: TopicId }> = [
 ];
 
 const GROUP_DEFAULT_TOPIC: Partial<Record<TopicGroupId, TopicId>> = {
-  general: "about",
+  brand: "about",
+  stores: "locations",
+  community: "loyalty",
+  gifts: "gift_cards",
+  payment: "payments",
+  orders: "order",
   delivery: "shipping",
+  stock: "stock",
   returns: "returns",
+  extra: "contact",
+  products: "product_info",
+  general: "about",
   warranty: "defects",
   promos: "discounts",
-  products: "product_info",
   prebuy: "customization",
   influencers: "discounts",
   service: "contact",

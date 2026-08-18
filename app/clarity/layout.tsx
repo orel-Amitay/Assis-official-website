@@ -4,8 +4,8 @@ import ClarityProviders from "@/components/clarity/ClarityProviders";
 
 const heebo = Heebo({
   subsets: ["hebrew", "latin"],
-  weight: ["400", "500", "600", "700", "800"],
   variable: "--font-clarity",
+  display: "swap",
 });
 
 export default function ClarityLayout({ children }: { children: ReactNode }) {

@@ -40,6 +40,34 @@ export function extractLinks(html: string, baseUrl: string) {
   return [...out];
 }
 
+const SOCIAL_HOST =
+  /(?:^|\.)(?:facebook|instagram|tiktok|youtube|twitter|x|pinterest|linkedin|whatsapp|telegram)\.com$|(?:^|\.)(?:wa\.me|t\.me|youtu\.be)$/i;
+
+export function extractSocialLinks(html: string, baseUrl: string) {
+  const hrefs = [...html.matchAll(/<a\b[^>]*href=["']([^"'#]+)["'][^>]*>/gi)];
+  const out = new Set<string>();
+  for (const match of hrefs) {
+    try {
+      const url = new URL(match[1], baseUrl);
+      url.hash = "";
+      if (SOCIAL_HOST.test(url.hostname.replace(/^www\./, ""))) out.add(url.toString());
+    } catch {
+      /* ignore */
+    }
+  }
+  return [...out];
+}
+
+function jsonScriptText(raw: string) {
+  return decodeEntities(raw)
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, " ")
+    .replace(/\\"/g, '"')
+    .replace(/[{}\[\]"]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function extraMetaText(html: string) {
   const bits: string[] = [];
   for (const match of html.matchAll(
@@ -48,11 +76,12 @@ export function extraMetaText(html: string) {
     if (match[1]) bits.push(decodeEntities(match[1]));
   }
   for (const match of html.matchAll(
-    /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+    /<script[^>]*type=["']application\/(?:ld\+)?json["'][^>]*>([\s\S]*?)<\/script>/gi,
   )) {
-    bits.push(decodeEntities(match[1].replace(/[{}\[\]"]/g, " ")));
+    const text = jsonScriptText(match[1] || "");
+    if (text.length > 40) bits.push(text.slice(0, 8000));
   }
-  return bits.join(". ").replace(/\s+/g, " ").trim();
+  return bits.join(". ").replace(/\s+/g, " ").trim().slice(0, 24000);
 }
 
 export function htmlToText(html: string) {
@@ -61,7 +90,7 @@ export function htmlToText(html: string) {
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
     .replace(/<!--[\s\S]*?-->/g, " ")
-    .replace(/<\/(p|div|li|h1|h2|h3|h4|h5|tr|section|article|blockquote|footer|header)>/gi, "\n")
+    .replace(/<\/(p|div|li|h1|h2|h3|h4|h5|tr|td|th|dt|dd|summary|section|article|blockquote|footer|header|details)>/gi, "\n")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<[^>]+>/g, " ");
 

@@ -45,7 +45,6 @@ body {
   scroll-behavior: smooth;
   scroll-padding-top: calc(3.5rem + env(safe-area-inset-top));
   overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Full-document capture for /PoweredByAssis/print → PDF */

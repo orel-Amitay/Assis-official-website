@@ -16,7 +16,7 @@ export function ScrollRoot({ children }: { children: React.ReactNode }) {
       <div
         id="app-scroll"
         ref={ref}
-        className="h-[100dvh] overflow-x-clip overflow-y-auto overscroll-none"
+        className="h-[100dvh] overflow-x-hidden overflow-y-auto overscroll-none"
       >
         {children}
       </div>

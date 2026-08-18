@@ -1,10 +1,18 @@
 export type TopicGroupId =
+  | "brand"
+  | "stores"
+  | "community"
+  | "gifts"
+  | "payment"
+  | "orders"
+  | "delivery"
+  | "stock"
+  | "returns"
+  | "extra"
+  | "products"
   | "site_qa"
   | "general"
-  | "delivery"
-  | "returns"
   | "warranty"
-  | "products"
   | "integrations"
   | "promos"
   | "influencers"
@@ -103,6 +111,7 @@ export type TopicDecisionState = {
   canonicalText: string;
   notRelevant?: boolean;
   qaAnswers?: Record<string, string>;
+  qaQuestions?: Record<string, string>;
   qaSkip?: Record<string, boolean>;
   qaCollect?: Record<string, string[]>;
 };
@@ -114,11 +123,17 @@ export type CustomQaItem = {
   question: string;
   answer: string;
   skipped?: boolean;
+  notApplicable?: boolean;
   collectFields?: string[];
   detailName?: string;
   forCustomers?: boolean;
   suggestedAnswer?: string;
   verdict?: ClaimDecision;
+  sourceUrl?: string;
+  sourceTitle?: string;
+  sourcePath?: string;
+  sourceQuote?: string;
+  keepVisible?: boolean;
 };
 
 export type ProductReviewState = {

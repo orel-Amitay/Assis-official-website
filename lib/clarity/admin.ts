@@ -23,7 +23,7 @@ export function isClarityAdmin(session?: Session | null, secret?: string | null)
   const emails = splitList(process.env.CLARITY_ADMIN_EMAILS);
   const usernames = splitList(process.env.CLARITY_ADMIN_USERNAMES);
 
-  if (email && (emails.includes(email) || email.endsWith("@assis.care"))) return true;
+  if (email && (emails.includes(email) || email.endsWith("@assis.care") || email === "nadav@assis.care")) return true;
   if (name && usernames.includes(name)) return true;
   return false;
 }
@@ -33,7 +33,7 @@ export async function listAdminDraftAnswers(): Promise<AdminDraftAnswers[]> {
   const db = sql();
   const rows = (await db`
     SELECT
-      u.id AS user_id,
+      d.user_id,
       u.email,
       u.name,
       u.username,
@@ -45,7 +45,7 @@ export async function listAdminDraftAnswers(): Promise<AdminDraftAnswers[]> {
       d.deleted_at,
       d.payload
     FROM clarity_drafts d
-    JOIN clarity_users u ON u.id = d.user_id
+    LEFT JOIN clarity_users u ON u.id = d.user_id
     ORDER BY d.saved_at DESC
   `) as {
     user_id: string;
@@ -61,27 +61,77 @@ export async function listAdminDraftAnswers(): Promise<AdminDraftAnswers[]> {
     payload: unknown;
   }[];
 
-  return rows.flatMap((row) => {
+  return rows.map((row) => {
     const parsed =
       typeof row.payload === "string"
         ? parseDraftFile(row.payload)
         : parseDraftFile(JSON.stringify(row.payload));
-    if (!parsed?.result || !parsed.state) return [];
-    const lang: ClarityLang = parsed.lang === "en" ? "en" : "he";
-    return [
-      {
-        userId: row.user_id,
-        email: row.email,
-        name: row.name,
-        username: row.username,
-        draftId: row.draft_id,
-        storeUrl: row.store_url || parsed.result.storeUrl,
-        storeName: row.store_name || parsed.result.storeName,
-        savedAt: row.saved_at instanceof Date ? row.saved_at.toISOString() : String(row.saved_at),
-        deleted: Boolean(row.deleted_at),
-        lang,
-        answers: knowledgeJson(parsed.result, parsed.state, lang),
-      },
-    ];
+    const lang: ClarityLang = parsed?.lang === "en" || row.lang === "en" ? "en" : "he";
+    let answers: AdminDraftAnswers["answers"] = [];
+    try {
+      answers =
+        parsed?.result && parsed.state
+          ? knowledgeJson(parsed.result, parsed.state, lang, { includeNotApplicable: true })
+          : [];
+    } catch {
+      answers = [];
+    }
+    return {
+      userId: row.user_id,
+      email: row.email,
+      name: row.name,
+      username: row.username,
+      draftId: row.draft_id,
+      storeUrl: row.store_url || parsed?.result.storeUrl || "",
+      storeName: row.store_name || parsed?.result.storeName || row.draft_id,
+      savedAt: row.saved_at instanceof Date ? row.saved_at.toISOString() : String(row.saved_at),
+      deleted: Boolean(row.deleted_at),
+      lang,
+      answers,
+      questionnaire: (parsed?.state.customQas || []).map((item) => ({
+        id: item.id,
+        groupId: item.groupId,
+        section: item.section,
+        detailName: item.detailName,
+        question: item.question,
+        answer: item.answer,
+        skipped: item.skipped,
+        notApplicable: item.notApplicable,
+        suggestedAnswer: item.suggestedAnswer,
+        verdict: item.verdict,
+        sourceUrl: item.sourceUrl,
+        sourceTitle: item.sourceTitle,
+      })),
+    };
   });
+}
+
+export async function copyAdminDraft(input: {
+  sourceUserId: string;
+  sourceDraftId: string;
+  destUserId: string;
+  destDraftId: string;
+}) {
+  await ensureClaritySchema();
+  const db = sql();
+  const updated = (await db`
+    UPDATE clarity_drafts AS dest
+    SET
+      store_url = src.store_url,
+      store_name = src.store_name,
+      scanned_at = src.scanned_at,
+      pages = src.pages,
+      demo = src.demo,
+      lang = src.lang,
+      payload = src.payload,
+      saved_at = now(),
+      deleted_at = NULL
+    FROM clarity_drafts AS src
+    WHERE src.user_id = ${input.sourceUserId}
+      AND src.id = ${input.sourceDraftId}
+      AND dest.user_id = ${input.destUserId}
+      AND dest.id = ${input.destDraftId}
+    RETURNING dest.id, dest.store_name, dest.store_url, dest.saved_at
+  `) as { id: string; store_name: string; store_url: string; saved_at: string | Date }[];
+  return updated[0] || null;
 }

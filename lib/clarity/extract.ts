@@ -86,6 +86,14 @@ export function isUsableStoreFact(text: string) {
   return true;
 }
 
+export function isUsableKbAnswer(text: string) {
+  const value = String(text || "").trim();
+  if (!value) return false;
+  if (isReviewNoise(value)) return false;
+  if (/^(כן|לא|אין|yes|no)\b/i.test(value) || /https?:\/\//i.test(value)) return value.length >= 2;
+  return value.length >= 8;
+}
+
 export function isReviewPage(path: string, title = "") {
   return /review|testimonial|loox|yotpo|judge[\s.-]?me|comment|ביקורות|המלצות[\s-]?לקוחות|תגובות/i.test(
     `${path} ${title}`,

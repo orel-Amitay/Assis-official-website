@@ -8,9 +8,11 @@ async function readJson<T>(response: Response) {
 
 export async function fetchCloudDrafts(): Promise<{ drafts: ClarityDraftMeta[]; admin: boolean }> {
   const response = await fetch("/api/clarity/drafts", { cache: "no-store" });
+  const data = await readJson<{ drafts?: ClarityDraftMeta[]; admin?: boolean; error?: string; detail?: string }>(
+    response,
+  ).catch(() => ({ drafts: [] as ClarityDraftMeta[], admin: false, error: "", detail: "" }));
   if (response.status === 401) throw new Error("auth");
-  if (!response.ok) throw new Error("cloud-list");
-  const data = await readJson<{ drafts?: ClarityDraftMeta[]; admin?: boolean }>(response);
+  if (!response.ok) throw new Error(data.detail || data.error || "cloud-list");
   return {
     drafts: Array.isArray(data.drafts) ? data.drafts : [],
     admin: Boolean(data.admin),
@@ -18,18 +20,29 @@ export async function fetchCloudDrafts(): Promise<{ drafts: ClarityDraftMeta[]; 
 }
 
 export async function fetchCloudDraft(id: string): Promise<ClarityDraft | null> {
-  const response = await fetch(`/api/clarity/drafts/${encodeURIComponent(id)}`, { cache: "no-store" });
-  if (response.status === 401 || response.status === 404) return null;
-  if (!response.ok) throw new Error("cloud-get");
+  const response = await fetch(`/api/clarity/drafts?id=${encodeURIComponent(id)}`, { cache: "no-store" });
+  if (response.status === 401) throw new Error("auth");
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    const data = await readJson<{ error?: string; detail?: string }>(response).catch(() => ({ error: "", detail: "" }));
+    throw new Error(data.detail || data.error || "cloud-get");
+  }
   const data = await readJson<{ draft?: ClarityDraft }>(response);
   return data.draft || null;
 }
 
-export async function patchCloudDraftState(id: string, state: ReviewState, lang: ClarityLang) {
+export async function patchCloudDraftState(
+  id: string,
+  state: ReviewState,
+  lang: ClarityLang,
+  options?: { keepalive?: boolean },
+) {
   const response = await fetch("/api/clarity/drafts", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ stateOnly: true, id, state, lang }),
+    cache: "no-store",
+    keepalive: Boolean(options?.keepalive),
   });
   if (response.status === 401) throw new Error("auth");
   if (response.status === 409) throw new Error("need-full");
@@ -40,11 +53,13 @@ export async function patchCloudDraftState(id: string, state: ReviewState, lang:
   return readJson<{ ok?: boolean; savedAt?: string }>(response);
 }
 
-export async function putCloudDraft(draft: ClarityDraft): Promise<ClarityDraft> {
+export async function putCloudDraft(draft: ClarityDraft, options?: { keepalive?: boolean }): Promise<ClarityDraft> {
   const response = await fetch("/api/clarity/drafts", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(draft),
+    cache: "no-store",
+    keepalive: Boolean(options?.keepalive),
   });
   if (response.status === 401) throw new Error("auth");
   if (!response.ok) {
@@ -56,7 +71,7 @@ export async function putCloudDraft(draft: ClarityDraft): Promise<ClarityDraft> 
 }
 
 export async function deleteCloudDraft(id: string) {
-  const response = await fetch(`/api/clarity/drafts/${encodeURIComponent(id)}`, { method: "DELETE" });
+  const response = await fetch(`/api/clarity/drafts?id=${encodeURIComponent(id)}`, { method: "DELETE" });
   if (response.status === 401) throw new Error("auth");
   if (!response.ok && response.status !== 404) throw new Error("cloud-delete");
 }

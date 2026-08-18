@@ -85,7 +85,13 @@ export default function ClarityAuthForm({
             onClick={() => signIn("google", { callbackUrl: nextUrl })}
             className="inline-flex h-11 w-full items-center justify-center rounded-full bg-assis-blue text-sm font-semibold text-white transition hover:bg-assis-blue-deep"
           >
-            {t.signInGoogle}
+            {lang === "he" ? (
+              <span>
+                המשיכו עם <span dir="ltr">Google</span>
+              </span>
+            ) : (
+              t.signInGoogle
+            )}
           </button>
           <p className="text-center text-[12px] text-zinc-400">{t.authOr}</p>
         </>
@@ -116,7 +122,7 @@ export default function ClarityAuthForm({
           onChange={(e) => setUsername(e.target.value)}
           placeholder={t.authUsername}
           autoComplete="username"
-          className="h-12 w-full rounded-2xl border border-black/[0.06] bg-white px-3.5 text-start text-base outline-none focus:border-assis-blue/30"
+          className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-3.5 text-start text-base text-foreground outline-none placeholder:text-zinc-400 focus:border-assis-blue/40 focus:ring-4 focus:ring-assis-blue/10"
         />
         <input
           value={password}
@@ -124,13 +130,13 @@ export default function ClarityAuthForm({
           placeholder={t.authPassword}
           type="password"
           autoComplete={mode === "register" ? "new-password" : "current-password"}
-          className="h-12 w-full rounded-2xl border border-black/[0.06] bg-white px-3.5 text-start text-base outline-none focus:border-assis-blue/30"
+          className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-3.5 text-start text-base text-foreground outline-none placeholder:text-zinc-400 focus:border-assis-blue/40 focus:ring-4 focus:ring-assis-blue/10"
         />
         {error ? <p className="text-[12px] text-amber-800">{error}</p> : null}
         <button
           type="submit"
           disabled={busy || !username.trim() || !password}
-          className="inline-flex h-11 w-full items-center justify-center rounded-full border border-black/[0.08] bg-white text-sm font-semibold text-foreground transition hover:bg-zinc-50 disabled:opacity-50"
+          className="inline-flex h-11 w-full items-center justify-center rounded-full bg-zinc-900 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-500"
         >
           {busy ? t.authWorking : mode === "register" ? t.authRegisterCta : t.authLoginCta}
         </button>

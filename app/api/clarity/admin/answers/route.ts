@@ -19,5 +19,5 @@ export async function GET(req: Request) {
   }
 
   const drafts = await listAdminDraftAnswers();
-  return NextResponse.json({ drafts });
+  return NextResponse.json({ drafts }, { headers: { "Cache-Control": "no-store" } });
 }

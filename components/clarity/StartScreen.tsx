@@ -19,6 +19,7 @@ export default function StartScreen({
   onDeleteDraft,
   onImportDraft,
   isAdmin,
+  error,
 }: {
   lang: ClarityLang;
   url: string;
@@ -32,6 +33,7 @@ export default function StartScreen({
   onDeleteDraft: (id: string) => void;
   onImportDraft: (file: File) => void;
   isAdmin?: boolean;
+  error?: string;
 }) {
   const t = COPY[lang];
   const guide = useClarityGuide(Boolean(signedIn));
@@ -39,7 +41,7 @@ export default function StartScreen({
 
   if (!signedIn) {
     return (
-      <main className="mx-auto flex min-h-[70dvh] max-w-md flex-col justify-center px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-8 sm:px-8 sm:pt-10">
+      <main className="mx-auto flex min-h-[calc(100dvh-5rem)] max-w-md flex-col justify-center px-4 pb-24 pt-8 sm:px-8 sm:pt-10">
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-assis-blue">
           {t.product}
         </p>
@@ -50,6 +52,7 @@ export default function StartScreen({
         <div className="mt-8 rounded-[1.6rem] border border-black/[0.05] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_18px_40px_-28px_rgba(16,24,40,0.2)]">
           <ClarityAuthForm lang={lang} />
         </div>
+        <div className="h-8 shrink-0" aria-hidden />
       </main>
     );
   }
@@ -71,10 +74,16 @@ export default function StartScreen({
       {isAdmin ? (
         <a
           href="/clarity/admin"
-          className="mt-3 inline-flex text-[13px] font-semibold text-assis-blue hover:underline"
+          className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-assis-blue px-4 text-[13px] font-semibold text-white hover:bg-assis-blue-deep"
         >
           {t.adminCta}
         </a>
+      ) : null}
+
+      {error ? (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900">
+          {error}
+        </div>
       ) : null}
 
       <section className="mt-8 rounded-[1.4rem] border border-black/[0.05] bg-white/90 p-4 shadow-sm">

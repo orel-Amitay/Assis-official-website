@@ -1,15 +1,18 @@
-import { extraMetaText, extractLinks, extractTitle, htmlToText } from "./html";
+import { extraMetaText, extractLinks, extractSocialLinks, extractTitle, htmlToText } from "./html";
 import { buildScanResult, isReviewPage, type PageSnapshot } from "./extract";
 import { fetchHtml, fetchJson, openStore } from "./fetch-page";
+import { GROUP_PAGE_HINTS } from "./kb-template";
 import { COMMON_POLICY_PATHS, POLICY_PATH_HINT, SKIP_PATH, TOPICS } from "./topics";
 import { ScanError, pathOf } from "./ssrf";
 import type { ScanResult, TopicGroupId } from "./types";
 
-const MAX_HTML_PAGES = 120;
-const MAX_ATTEMPTS = 260;
-const MAX_PRODUCT_JSON_PAGES = 12;
-const MAX_SITEMAP_CHILDREN = 12;
-const MAX_BLOG_ARTICLES = 40;
+const MAX_HTML_PAGES = 160;
+const MAX_ATTEMPTS = 320;
+const MAX_PRODUCT_JSON_PAGES = 3;
+const MAX_SITEMAP_CHILDREN = 18;
+const MAX_BLOG_ARTICLES = 30;
+const MAX_PRODUCT_SNAPS = 12;
+const PAGE_TEXT_LIMIT = 24000;
 
 function normalizeUrl(url: string) {
   return url.replace(/\/$/, "") || url;
@@ -135,7 +138,7 @@ type ShopifyCollection = { title?: string; handle?: string; body_html?: string }
 function snapshotFromHtmlBody(url: string, title: string, path: string, html: string, extra = "") {
   const text = [title, extra, html ? htmlToText(html) : ""].filter(Boolean).join(". ").trim();
   if (text.length < 40) return null;
-  return { url, title: title || path, path, text: text.slice(0, 18000) } satisfies PageSnapshot;
+  return { url, title: title || path, path, text: text.slice(0, PAGE_TEXT_LIMIT) } satisfies PageSnapshot;
 }
 
 function mergeSnapshots(a: PageSnapshot, b: PageSnapshot): PageSnapshot {
@@ -176,6 +179,8 @@ async function shopifyPageSnapshots(origin: string): Promise<PageSnapshot[]> {
 
 async function shopifyProductSnapshots(origin: string): Promise<PageSnapshot[]> {
   const snapshots: PageSnapshot[] = [];
+  const digestParts: string[] = [];
+  let collected = 0;
   for (let page = 1; page <= MAX_PRODUCT_JSON_PAGES; page++) {
     const data = await fetchJson<{ products?: ShopifyProduct[] }>(
       `${origin}/products.json?limit=250&page=${page}`,
@@ -184,20 +189,33 @@ async function shopifyProductSnapshots(origin: string): Promise<PageSnapshot[]> 
     if (!products?.length) break;
     for (const product of products) {
       if (!product.handle) continue;
+      collected += 1;
       const variantText = (product.variants || [])
         .map((variant) => [variant.title, variant.option1, variant.option2, variant.option3].filter(Boolean).join(" "))
         .join(". ");
       const extra = [product.product_type, product.tags, variantText].filter(Boolean).join(". ");
-      const snap = snapshotFromHtmlBody(
-        `${origin}/products/${product.handle}`,
-        product.title || product.handle,
-        `/products/${product.handle}`,
-        product.body_html || "",
-        extra,
-      );
-      if (snap) snapshots.push(snap);
+      const body = htmlToText(product.body_html || "").slice(0, 1600);
+      digestParts.push(`${product.title || product.handle}. ${extra}. ${body}`.trim());
+      if (snapshots.length < MAX_PRODUCT_SNAPS) {
+        const snap = snapshotFromHtmlBody(
+          `${origin}/products/${product.handle}`,
+          product.title || product.handle,
+          `/products/${product.handle}`,
+          product.body_html || "",
+          extra,
+        );
+        if (snap) snapshots.push(snap);
+      }
     }
     if (products.length < 250) break;
+  }
+  if (digestParts.length > 0) {
+    snapshots.unshift({
+      url: `${origin}/collections/all`,
+      title: "Product catalog",
+      path: "/collections/all",
+      text: `Catalog (${collected} products).\n\n${digestParts.slice(0, 80).join("\n")}`.slice(0, 18000),
+    });
   }
   return snapshots;
 }
@@ -257,13 +275,14 @@ function toSnapshot(finalUrl: string, html: string): PageSnapshot | null {
     url: finalUrl,
     title: pageTitleFrom(html, pathOf(finalUrl)),
     path: pathOf(finalUrl),
-    text: text.slice(0, 18000),
+    text: text.slice(0, PAGE_TEXT_LIMIT),
   };
 }
 
 async function fetchPages(urls: string[], homepage?: { url: string; html: string }) {
   const pages: PageSnapshot[] = [];
   const seen = new Set<string>();
+  const discovered: string[] = [];
   const queue = urls
     .filter((url) => {
       const key = normalizeUrl(url);
@@ -271,25 +290,38 @@ async function fetchPages(urls: string[], homepage?: { url: string; html: string
       seen.add(key);
       return true;
     })
-    .sort((a, b) => urlPriority(a) - urlPriority(b))
-    .slice(0, MAX_ATTEMPTS);
+    .sort((a, b) => urlPriority(a) - urlPriority(b));
+
+  function enqueue(url: string) {
+    const key = normalizeUrl(url);
+    if (seen.has(key) || !isCrawlableUrl(url)) return;
+    seen.add(key);
+    queue.push(url);
+  }
 
   if (homepage) {
     const snap = toSnapshot(homepage.url, homepage.html);
     if (snap) pages.push(snap);
+    for (const link of extractLinks(homepage.html, homepage.url)) enqueue(link);
+    queue.sort((a, b) => urlPriority(a) - urlPriority(b));
   }
 
   let index = 0;
-  const workers = Array.from({ length: 4 }, async () => {
-    while (index < queue.length && pages.length < MAX_HTML_PAGES) {
+  const workers = Array.from({ length: 5 }, async () => {
+    while (index < queue.length && pages.length < MAX_HTML_PAGES && index < MAX_ATTEMPTS) {
       const url = queue[index++];
       if (!url) break;
       if (homepage && normalizeUrl(url) === normalizeUrl(homepage.url)) continue;
       try {
-        const fetched = await fetchHtml(url);
+        const fetched = await fetchHtml(url, isHighValueUrl(url) ? 12000 : 8000);
         if (!fetched) continue;
         const snap = toSnapshot(fetched.finalUrl || url, fetched.html);
         if (snap) pages.push(snap);
+        if (isHighValueUrl(url) || isHighValueUrl(fetched.finalUrl || url)) {
+          for (const link of extractLinks(fetched.html, fetched.finalUrl || url)) {
+            if (urlPriority(link) <= 2) discovered.push(link);
+          }
+        }
       } catch {
         /* skip */
       }
@@ -297,7 +329,77 @@ async function fetchPages(urls: string[], homepage?: { url: string; html: string
   });
 
   await Promise.all(workers);
+  for (const link of discovered) enqueue(link);
+  if (index < queue.length && pages.length < MAX_HTML_PAGES) {
+    const extraWorkers = Array.from({ length: 4 }, async () => {
+      while (index < queue.length && pages.length < MAX_HTML_PAGES && index < MAX_ATTEMPTS) {
+        const url = queue[index++];
+        if (!url) break;
+        try {
+          const fetched = await fetchHtml(url);
+          if (!fetched) continue;
+          const snap = toSnapshot(fetched.finalUrl || url, fetched.html);
+          if (snap) pages.push(snap);
+        } catch {
+          /* skip */
+        }
+      }
+    });
+    await Promise.all(extraWorkers);
+  }
   return pages;
+}
+
+async function shopifyShopSnapshot(origin: string): Promise<PageSnapshot | null> {
+  const data = await fetchJson<{
+    name?: string;
+    currency?: string;
+    money_format?: string;
+    domain?: string;
+    description?: string;
+  }>(`${origin}/meta.json`);
+  const shop = data || (await fetchJson<Record<string, string>>(`${origin}/shop.json`));
+  if (!shop || typeof shop !== "object") return null;
+  const text = Object.entries(shop)
+    .filter(([, value]) => value && typeof value === "string")
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(". ");
+  if (text.length < 20) return null;
+  return {
+    url: `${origin}/`,
+    title: String(shop.name || shop.domain || "Shop"),
+    path: "/__shop",
+    text: text.slice(0, 4000),
+  };
+}
+
+function socialSnapshot(origin: string, html?: string): PageSnapshot | null {
+  if (!html) return null;
+  const links = extractSocialLinks(html, origin);
+  if (links.length === 0) return null;
+  return {
+    url: `${origin}/`,
+    title: "Social links",
+    path: "/__social",
+    text: `Social networks:\n${links.join("\n")}`,
+  };
+}
+
+function siteIndexSnapshot(origin: string, pages: PageSnapshot[]): PageSnapshot {
+  const lines = pages
+    .slice()
+    .sort((a, b) => a.path.localeCompare(b.path))
+    .map((page) => `${page.path || "/"} | ${page.title} | ${page.url}`);
+  const blogs = pages.filter((page) => /\/blogs?\//i.test(page.path)).map((page) => page.url);
+  return {
+    url: `${origin}/`,
+    title: "Site index",
+    path: "/__site-index",
+    text: `Pages scanned (${pages.length}).\nBlogs: ${blogs.slice(0, 20).join(", ") || "none found"}.\n\n${lines.slice(0, 200).join("\n")}`.slice(
+      0,
+      18000,
+    ),
+  };
 }
 
 export async function scanStoreWithPages(rawUrl: string): Promise<{ result: ScanResult; pages: PageSnapshot[] }> {
@@ -309,12 +411,13 @@ export async function scanStoreWithPages(rawUrl: string): Promise<{ result: Scan
   const fromHome = opened.home
     ? extractLinks(opened.home.html, opened.home.url).filter((url) => isCrawlableUrl(url))
     : [];
-  const [fromSitemap, shopifyPages, shopifyProducts, shopifyCollections, shopifyArticles] = await Promise.all([
+  const [fromSitemap, shopifyPages, shopifyProducts, shopifyCollections, shopifyArticles, shopifyShop] = await Promise.all([
     sitemapUrls(originUrl),
     shopifyPageSnapshots(origin),
     shopifyProductSnapshots(origin),
     shopifyCollectionSnapshots(origin),
     shopifyArticleSnapshots(origin),
+    shopifyShopSnapshot(origin),
   ]);
   const common = COMMON_POLICY_PATHS.map((path) => new URL(path, originUrl).toString());
 
@@ -333,13 +436,18 @@ export async function scanStoreWithPages(rawUrl: string): Promise<{ result: Scan
     queue,
     opened.home ? { url: opened.home.url, html: opened.home.html } : undefined,
   );
+  const extras = [
+    shopifyShop,
+    socialSnapshot(origin, opened.home?.html),
+  ].filter((page): page is PageSnapshot => Boolean(page));
   const pagesByUrl = new Map<string, PageSnapshot>();
-  for (const page of [...shopifyPages, ...shopifyProducts, ...shopifyCollections, ...shopifyArticles, ...fetchedPages]) {
-    const key = normalizeUrl(page.url);
+  for (const page of [...shopifyPages, ...shopifyProducts, ...shopifyCollections, ...shopifyArticles, ...fetchedPages, ...extras]) {
+    const key = `${page.path}|${normalizeUrl(page.url)}`;
     const existing = pagesByUrl.get(key);
     pagesByUrl.set(key, existing ? mergeSnapshots(existing, page) : page);
   }
-  const pages = [...pagesByUrl.values()];
+  const merged = [...pagesByUrl.values()];
+  const pages = [...merged, siteIndexSnapshot(origin, merged)];
 
   if (pages.length === 0) {
     throw new ScanError("empty", "The site opened, but we couldn’t read enough page content.");
@@ -367,9 +475,13 @@ export async function scanCategoryStore(
   const opened = await openStore(rawUrl);
   const origin = opened.origin;
   const originUrl = new URL(origin);
+  const hint = GROUP_PAGE_HINTS[groupId];
   const topics = TOPICS.filter((topic) => topic.group === groupId);
-  const matchesGroup = (path: string, title = "") =>
-    topics.some((topic) => topic.pathHints.test(path) || topic.pathHints.test(title));
+  const matchesGroup = (path: string, title = "") => {
+    const blob = `${path} ${title}`;
+    if (hint?.test(blob)) return true;
+    return topics.some((topic) => topic.pathHints.test(path) || topic.pathHints.test(title));
+  };
 
   const fromHome = opened.home
     ? extractLinks(opened.home.html, opened.home.url).filter((url) => {
@@ -384,21 +496,33 @@ export async function scanCategoryStore(
     matchesGroup(pathOf(url)),
   );
   let shopifyPages: PageSnapshot[] = [];
+  let fromSitemap: string[] = [];
   try {
     shopifyPages = (await shopifyPageSnapshots(origin)).filter((page) => matchesGroup(page.path, page.title));
   } catch {
     shopifyPages = [];
   }
+  try {
+    fromSitemap = (await sitemapUrls(originUrl)).filter((url) => {
+      try {
+        return matchesGroup(pathOf(url));
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    fromSitemap = [];
+  }
 
   const fetched = await fetchPages(
-    [originUrl.toString(), ...fromHome, ...common, ...shopifyPages.map((page) => page.url)].slice(0, 50),
+    [originUrl.toString(), ...fromHome, ...fromSitemap, ...common, ...shopifyPages.map((page) => page.url)].slice(0, 80),
     opened.home ? { url: opened.home.url, html: opened.home.html } : undefined,
   );
   const pagesByUrl = new Map<string, PageSnapshot>();
   for (const page of [...shopifyPages, ...fetched]) {
     pagesByUrl.set(normalizeUrl(page.url), page);
   }
-  const pages = [...pagesByUrl.values()].slice(0, 30);
+  const pages = [...pagesByUrl.values()].slice(0, 40);
   if (pages.length === 0) {
     throw new ScanError("empty", "The site opened, but we couldn’t read enough page content.");
   }

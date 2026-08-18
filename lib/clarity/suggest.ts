@@ -1,5 +1,6 @@
 import { isUsableStoreFact } from "./extract";
 import { isProcessTopic } from "./focus";
+import { isCoreKbQuestion, isOptionalKbSection } from "./kb-template";
 import type { CustomQaItem, ExtractedClaim, ScanResult } from "./types";
 
 const STOP = new Set([
@@ -117,18 +118,31 @@ export function suggestionsForCustomQa(item: CustomQaItem, result: ScanResult, l
   return out;
 }
 
-export function isScanRelevantQa(item: CustomQaItem, result: ScanResult) {
+export function qaWorkStatus(item: CustomQaItem): "found" | "review" | "missing" | "edited" | "na" {
+  if (item.skipped || item.notApplicable) return "na";
+  if (!item.answer.trim()) return "missing";
+  if (item.verdict === "approved") {
+    return item.suggestedAnswer && item.answer.trim() === item.suggestedAnswer.trim() ? "found" : "edited";
+  }
+  if (item.suggestedAnswer && item.answer.trim() === item.suggestedAnswer.trim()) return "review";
+  return "edited";
+}
+
+export function isScanRelevantQa(item: CustomQaItem, result: ScanResult, showNa = false) {
+  if (item.skipped || item.notApplicable) return true;
+  if (item.keepVisible) return true;
   if (item.section === "process") return true;
-  if (item.skipped) return false;
   if (result.importedKb || result.demo) return true;
-  if (!/^(tpl|kb)-/.test(item.id)) return true;
   if (item.answer.trim() || item.suggestedAnswer?.trim()) return true;
-  return suggestionsForCustomQa(item, result, 1).length > 0;
+  if (isCoreKbQuestion(item) && !isOptionalKbSection(item.detailName, item.question)) return true;
+  if (isOptionalKbSection(item.detailName, item.question)) return showNa;
+  return /^(tpl|kb)-/.test(item.id);
 }
 
 export function applyScanRecommendations(result: ScanResult, state: { customQas?: CustomQaItem[] }) {
   return (state.customQas || []).map((item) => {
     if (item.section === "process" || item.skipped || item.answer.trim()) return item;
+    if (/^(tpl|kb)-/.test(item.id)) return item;
     const top = suggestionsForCustomQa(item, result, 1)[0];
     if (!top?.text.trim() || !isUsableStoreFact(top.text)) return item;
     return {

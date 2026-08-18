@@ -38,11 +38,11 @@ export const QA_DEFS: QaDef[] = [
   {
     id: "about.why",
     topicId: "about",
-    en: "Why this brand — what makes you different?",
+    en: "Why this brand - what makes you different?",
     he: "למה דווקא אתם? מה מייחד אתכם?",
     keywords: /why us|what makes us|unique|mission|חזון|ייעוד|למה אנחנו|למה דווקא|שונה|מיוחד/i,
-    placeholderEn: "Why choose you — values, quality, story.",
-    placeholderHe: "למה לבחור בכם ולא במתחרים — ערכים, איכות, סיפור.",
+    placeholderEn: "Why choose you - values, quality, story.",
+    placeholderHe: "למה לבחור בכם ולא במתחרים - ערכים, איכות, סיפור.",
   },
   { id: "contact.hours", topicId: "contact", en: "What are the human support hours on WhatsApp?", he: "מה שעות פעילות מענה אנושי בוואטסאפ?", keywords: /hours|שעות|ימים\s*א|sunday|thursday|א['׳]?\s*[-–]\s*ה|09:00|16:00/i },
   { id: "contact.channel", topicId: "contact", en: "How do I contact you? Is there email?", he: "איך יוצרים קשר? יש מייל?", keywords: /whatsapp|וואטסאפ|email|מייל|phone|טלפון|chat|צ׳אט|צור\s*קשר|054/i },
@@ -83,8 +83,8 @@ export const QA_DEFS: QaDef[] = [
     keywords: /courier|חברת\s*משלוח|אוריין|orian|logisteam|לוגיסט|hfd|dhl|ups|דואר/i,
     alwaysShow: true,
     chipSet: "couriers",
-    placeholderEn: "Orian / HFD / Israel Post — tap below, or write extra details.",
-    placeholderHe: "אוריין / HFD / דואר ישראל — לחצו למטה, או כתבו פרטים נוספים.",
+    placeholderEn: "Orian / HFD / Israel Post - tap below, or write extra details.",
+    placeholderHe: "אוריין / HFD / דואר ישראל - לחצו למטה, או כתבו פרטים נוספים.",
   },
   { id: "courier.schedule", topicId: "courier", en: "How do I schedule receiving the delivery?", he: "איך מתאמים הגעה לקבלת המשלוח?", keywords: /sms|סמס|schedule|תיאום|חלון\s*זמנים|ייצור\s*קשר/i },
   { id: "international.yes", topicId: "international", en: "Do you ship internationally?", he: "יש משלוחים לחו״ל?", keywords: /international|worldwide|חו["״]ל|abroad/i },
@@ -93,7 +93,7 @@ export const QA_DEFS: QaDef[] = [
   { id: "pickup.where", topicId: "pickup", en: "Where do I pick up, and when is it ready?", he: "מאיפה אוספים ומתי זה מוכן?", keywords: /ready|מוכן|location|מיקום|studio|סטודיו|תעודה\s*מזהה/i },
   { id: "tracking.how", topicId: "tracking", en: "If a customer asks about order / shipping status", he: "אם לקוח שואל על סטטוס משלוח/הזמנה", keywords: /track|מעקב|tracking|סטטוס\s*(?:משלוח|הזמנה)/i, collect: true },
   { id: "lead_time.custom", topicId: "lead_time", en: "How long does production take?", he: "כמה זמן לוקח הייצור?", keywords: /production|ייצור|lead time|מוכן תוך|10\s*שעות/i },
-  { id: "lead_time.stock", topicId: "lead_time", en: "How fast do in-stock items ship?", he: "פריט במלאי — תוך כמה זמן יוצא?", keywords: /in[- ]?stock|מלאי|processing/i },
+  { id: "lead_time.stock", topicId: "lead_time", en: "How fast do in-stock items ship?", he: "פריט במלאי - תוך כמה זמן יוצא?", keywords: /in[- ]?stock|מלאי|processing/i },
   { id: "returns.window", topicId: "returns", en: "How many trial / return days are there?", he: "תוך כמה זמן אפשר להחזיר? יש תקופת ניסיון?", keywords: /14|30|100|days|יום|ימים|trial|ניסיון|return window|תוך/i },
   { id: "returns.who_pays", topicId: "returns", en: "Who pays for return shipping?", he: "מי משלם על משלוח ההחזרה?", keywords: /return shipping|משלוח\s*החזרה|customer pays|הלקוח משלם|איסוף\s*עד\s*הבית/i },
   { id: "returns.conditions", topicId: "returns", en: "What are the return conditions?", he: "מה התנאים להחזרה?", keywords: /unused|לא בשימוש|defective|פגום|sale items|סייל|אריזה/i },
@@ -104,8 +104,8 @@ export const QA_DEFS: QaDef[] = [
   { id: "cancellations.until", topicId: "cancellations", en: "Until when can I cancel an order?", he: "עד מתי אפשר לבטל הזמנה?", keywords: /cancel|ביטול|until they ship|עד שהיא יוצאת|ביטולי\s*עסקאות/i },
   { id: "warranty.length", topicId: "warranty", en: "Is there a warranty, and for how long?", he: "יש אחריות? לכמה זמן?", keywords: /warranty|אחריות|12|10\s*שנ|month|חודש|שנה|חמש\s*שנים|קליפס/i },
   { id: "warranty.cover", topicId: "warranty", en: "What does the warranty cover / not cover?", he: "מה האחריות כוללת ומה לא?", keywords: /wear|בלאי|not covered|אינו כלול|defects|פגם\s*ייצור|כתמים|מבחן\s*כשלים/i },
-  { id: "defects.how", topicId: "defects", en: "The item arrived damaged. What should I do?", he: "במקרה של פגם — מה עושים?", keywords: /defect|פגם|פגום|damaged|תמונה|סרטון|photo|video/i },
-  { id: "invoices.when", topicId: "invoices", en: "I didn’t get an invoice — what now?", he: "בקשה לשליחת חשבונית / לא קיבלתי חשבונית", keywords: /invoice|חשבונית|receipt|קבלה|ספאם|spam/i },
+  { id: "defects.how", topicId: "defects", en: "The item arrived damaged. What should I do?", he: "במקרה של פגם - מה עושים?", keywords: /defect|פגם|פגום|damaged|תמונה|סרטון|photo|video/i },
+  { id: "invoices.when", topicId: "invoices", en: "I didn’t get an invoice - what now?", he: "בקשה לשליחת חשבונית / לא קיבלתי חשבונית", keywords: /invoice|חשבונית|receipt|קבלה|ספאם|spam/i },
   {
     id: "process_shipping.steps",
     topicId: "process_shipping",
@@ -134,8 +134,8 @@ export const QA_DEFS: QaDef[] = [
     he: "מה התהליך אם המשלוח מתעכב?",
     keywords: /עיכוב|delay|מתעכב/i,
     alwaysShow: true,
-    placeholderEn: "1) Take order number. 2) Check with courier. 3) Update the customer. 4) If lost — replacement or refund.",
-    placeholderHe: "1) מספר הזמנה. 2) בדיקה מול חברת המשלוחים. 3) עדכון ללקוח. 4) אם אבד — החלפה או החזר.",
+    placeholderEn: "1) Take order number. 2) Check with courier. 3) Update the customer. 4) If lost - replacement or refund.",
+    placeholderHe: "1) מספר הזמנה. 2) בדיקה מול חברת המשלוחים. 3) עדכון ללקוח. 4) אם אבד - החלפה או החזר.",
   },
   {
     id: "process_return.steps",
@@ -144,8 +144,8 @@ export const QA_DEFS: QaDef[] = [
     he: "מה תהליך ההחזרה? שלב אחרי שלב",
     keywords: /תהליך\s*החזר|how to return|return process|שלב/i,
     alwaysShow: true,
-    placeholderEn: "1) Customer contacts WhatsApp. 2) Check eligibility. 3) Arrange pickup or they ship it. 4) After arrival — refund.",
-    placeholderHe: "1) הלקוח פונה בוואטסאפ. 2) בודקים זכאות. 3) מתאמים איסוף או שהלקוח שולח. 4) אחרי קבלה — החזר כספי.",
+    placeholderEn: "1) Customer contacts WhatsApp. 2) Check eligibility. 3) Arrange pickup or they ship it. 4) After arrival - refund.",
+    placeholderHe: "1) הלקוח פונה בוואטסאפ. 2) בודקים זכאות. 3) מתאמים איסוף או שהלקוח שולח. 4) אחרי קבלה - החזר כספי.",
   },
   {
     id: "process_return.collect_start",
@@ -240,8 +240,8 @@ export const QA_DEFS: QaDef[] = [
     he: "מה תהליך ביטול הזמנה?",
     keywords: /תהליך\s*ביטול|how to cancel|cancel process/i,
     alwaysShow: true,
-    placeholderEn: "1) Get the order number. 2) If not shipped / production not started — cancel. 3) If shipped — return process.",
-    placeholderHe: "1) מקבלים מספר הזמנה. 2) אם לא יצאה / לא התחיל ייצור — מבטלים. 3) אם יצאה — תהליך החזרה.",
+    placeholderEn: "1) Get the order number. 2) If not shipped / production not started - cancel. 3) If shipped - return process.",
+    placeholderHe: "1) מקבלים מספר הזמנה. 2) אם לא יצאה / לא התחיל ייצור - מבטלים. 3) אם יצאה - תהליך החזרה.",
   },
   {
     id: "process_cancel.collect_start",
@@ -345,6 +345,7 @@ export type QaBlock = {
   def: QaDef;
   claims: ExtractedClaim[];
   answer: string;
+  question: string;
   conflict: boolean;
   skipped: boolean;
   collectFields: string[];
@@ -369,6 +370,7 @@ export function qaBlocks(topic: TopicReview, state?: ReviewState | null): QaBloc
       const claims = buckets.get(def.id) || [];
       const skipped = Boolean(topicState?.qaSkip?.[def.id] || topicState?.notRelevant);
       const answer = topicState?.qaAnswers?.[def.id] || "";
+      const question = topicState?.qaQuestions?.[def.id] || "";
       const collectFields = topicState?.qaCollect?.[def.id] || [];
       const decisions = topicState?.claimDecisions || {};
       const conflict =
@@ -379,6 +381,7 @@ export function qaBlocks(topic: TopicReview, state?: ReviewState | null): QaBloc
         def,
         claims,
         answer,
+        question,
         conflict: conflict && !resolved,
         skipped,
         collectFields,
@@ -390,8 +393,7 @@ export function qaBlocks(topic: TopicReview, state?: ReviewState | null): QaBloc
 
 export function qaBlockDone(block: QaBlock) {
   if (block.skipped) return true;
-  if (block.answer.trim()) return true;
-  return Object.values(block.decisions).some((decision) => decision === "approved" || decision === "rejected");
+  return Object.values(block.decisions).some((decision) => decision === "approved");
 }
 
 export function qaPlaceholder(def: QaDef, lang: ClarityLang) {

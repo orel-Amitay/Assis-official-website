@@ -1,7 +1,7 @@
 import { SECTION_GUIDE } from "./checklists";
 import { PROCESS_TOPICS } from "./focus";
 import { withTemplateQas } from "./import-kb";
-import { mergeReviewState } from "./review-state";
+import { adaptQuestionnaireToStore, mergeReviewState } from "./review-state";
 import { groupById, TOPICS } from "./topics";
 import type { ReviewState, ScanResult, TopicReview } from "./types";
 
@@ -45,11 +45,12 @@ export function withProcessTopics(result: ScanResult): ScanResult {
 export function hydrateClarity(result: ScanResult, saved?: ReviewState | null) {
   const nextResult = withProcessTopics(result);
   const state = mergeReviewState(nextResult, saved);
+  const withTemplate = {
+    ...state,
+    customQas: withTemplateQas(state, result.importedKb),
+  };
   return {
     result: nextResult,
-    state: {
-      ...state,
-      customQas: withTemplateQas(state, result.importedKb),
-    },
+    state: adaptQuestionnaireToStore(withTemplate, nextResult.pagesScanned || [], nextResult),
   };
 }
