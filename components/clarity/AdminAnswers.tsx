@@ -213,7 +213,7 @@ export default function AdminAnswers({ lang: initialLang = "he" }: { lang?: Clar
 
   return (
     <ClarityShell lang={lang} onToggleLang={() => setLang((prev) => (prev === "he" ? "en" : "he"))}>
-      {openDraft && active ? (
+      {openDraft ? (
         <AdminDraftView
           lang={lang}
           draft={openDraft}
@@ -245,6 +245,10 @@ export default function AdminAnswers({ lang: initialLang = "he" }: { lang?: Clar
   );
 }
 
+function isMraDraft(draft: AdminDraftAnswers) {
+  return /mra/i.test(`${draft.storeName} ${draft.storeUrl} ${draft.draftId}`);
+}
+
 function AdminStoreList({
   lang,
   drafts,
@@ -258,6 +262,36 @@ function AdminStoreList({
 }) {
   const t = COPY[lang];
   const he = lang === "he";
+  const [copying, setCopying] = useState(false);
+  const [copyNote, setCopyNote] = useState("");
+  const nadavMra = drafts.find(
+    (draft) => String(draft.email || "").toLowerCase() === "nadav@assis.care" && isMraDraft(draft),
+  );
+
+  async function replaceWithNadav(dest: AdminDraftAnswers) {
+    if (!nadavMra) return;
+    if (!window.confirm(t.adminReplaceFromNadavConfirm)) return;
+    setCopying(true);
+    setCopyNote("");
+    try {
+      const response = await fetch("/api/clarity/admin/copy-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceUserId: nadavMra.userId,
+          sourceDraftId: nadavMra.draftId,
+          destUserId: dest.userId,
+          destDraftId: dest.draftId,
+        }),
+      });
+      if (!response.ok) throw new Error("copy");
+      setCopyNote(t.adminReplaceDone);
+    } catch {
+      setCopyNote(t.adminReplaceError);
+    } finally {
+      setCopying(false);
+    }
+  }
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-16 pt-4 sm:px-8 sm:pt-8">
@@ -291,6 +325,12 @@ function AdminStoreList({
         </button>
       ) : null}
 
+      {copyNote ? (
+        <p className={`mt-3 text-[13px] font-medium ${copyNote === t.adminReplaceDone ? "text-emerald-800" : "text-orange-800"}`}>
+          {copyNote}
+        </p>
+      ) : null}
+
       {drafts.length === 0 ? (
         <p className="mt-10 text-[14px] text-muted-foreground">{t.adminEmpty}</p>
       ) : (
@@ -304,7 +344,8 @@ function AdminStoreList({
             return (
               <article
                 key={`${draft.userId}:${draft.draftId}`}
-                className="rounded-[1.5rem] border border-black/[0.05] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03),0_16px_40px_-24px_rgba(16,24,40,0.18)] sm:p-5"
+                className="cursor-pointer rounded-[1.5rem] border border-black/[0.05] bg-white p-4 text-start shadow-[0_1px_2px_rgba(16,24,40,0.03),0_16px_40px_-24px_rgba(16,24,40,0.18)] transition hover:border-assis-blue/25 sm:p-5"
+                onClick={() => onOpen(draft)}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -326,23 +367,42 @@ function AdminStoreList({
                       })}
                     </p>
                   </div>
-                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                     <button
                       type="button"
-                      onClick={() => onOpen(draft)}
-                      className="inline-flex h-10 items-center rounded-full bg-assis-blue px-4 text-[13px] font-semibold text-white hover:bg-assis-blue-deep"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onOpen(draft);
+                      }}
+                      className="inline-flex h-10 w-full items-center justify-center rounded-full bg-assis-blue px-4 text-[13px] font-semibold text-white hover:bg-assis-blue-deep sm:w-auto"
                     >
                       {t.adminOpen}
                     </button>
                     <button
                       type="button"
-                      onClick={() =>
-                        downloadJson(knowledgeDownloadName(draft.storeName), exportDraft(draft))
-                      }
-                      className="inline-flex h-10 items-center rounded-full border border-black/[0.08] bg-white px-3 text-[12px] font-medium text-zinc-600 hover:text-foreground"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        downloadJson(knowledgeDownloadName(draft.storeName), exportDraft(draft));
+                      }}
+                      className="inline-flex h-10 w-full items-center justify-center rounded-full border border-black/[0.08] bg-white px-3 text-[12px] font-medium text-zinc-600 hover:text-foreground sm:w-auto"
                     >
                       {t.adminDownloadOne}
                     </button>
+                    {nadavMra &&
+                    String(draft.email || "").toLowerCase() === "aviohana912@gmail.com" &&
+                    isMraDraft(draft) ? (
+                      <button
+                        type="button"
+                        disabled={copying}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void replaceWithNadav(draft);
+                        }}
+                        className="inline-flex h-10 w-full items-center justify-center rounded-full border border-orange-200 bg-orange-50 px-3 text-[12px] font-semibold text-orange-900 hover:bg-orange-100 disabled:opacity-50 sm:w-auto"
+                      >
+                        {t.adminReplaceFromNadav}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
                 <div className="mt-4">
@@ -385,7 +445,7 @@ function AdminDraftView({
   lang: ClarityLang;
   draft: AdminDraftAnswers;
   categories: AdminCategory[];
-  active: AdminCategory;
+  active?: AdminCategory;
   progressDone: number;
   progressTotal: number;
   progressLeft: number;
@@ -402,7 +462,7 @@ function AdminDraftView({
   const allItems = categories.flatMap((group) => group.details.flatMap((detail) => detail.items));
   const filterCounts = useMemo(() => countQaFilters(allItems), [allItems]);
   const displayCategories = useMemo(() => {
-    if (!filtering) return [active];
+    if (!filtering) return active ? [active] : [];
     return categories
       .map((group) => ({
         ...group,
@@ -436,7 +496,16 @@ function AdminDraftView({
         >
           {t.adminBack}
         </button>
-        <p className="max-w-[45%] truncate text-[11px] text-zinc-400">{draft.storeName}</p>
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="max-w-[40%] truncate text-[11px] text-zinc-400">{draft.storeName}</p>
+          <button
+            type="button"
+            onClick={() => downloadJson(knowledgeDownloadName(draft.storeName), exportDraft(draft))}
+            className="inline-flex h-8 shrink-0 items-center rounded-full border border-black/[0.08] bg-white px-3 text-[11px] font-medium text-zinc-600 hover:text-foreground"
+          >
+            {t.adminDownloadOne}
+          </button>
+        </div>
       </div>
 
       <div className="sticky top-0 z-30 -mx-4 border-b border-black/[0.05] bg-[#f7f8fa] px-4 py-2 sm:mx-0 sm:rounded-[1.3rem] sm:border sm:px-3 sm:py-2.5 [transform:translateZ(0)]">
@@ -482,8 +551,8 @@ function AdminDraftView({
               key={group.id}
               type="button"
               onClick={() => selectGroup(group.id)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-[12px] font-medium transition ${
-                active.id === group.id
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-[12px] font-medium transition ${
+                active?.id === group.id
                   ? "bg-assis-blue text-white"
                   : group.done >= group.total
                     ? "bg-emerald-50 text-emerald-800"
@@ -491,7 +560,7 @@ function AdminDraftView({
               }`}
             >
               {he ? group.titleHe : group.title}
-              <span className={`ms-1.5 text-[10px] ${active.id === group.id ? "text-white/80" : "text-zinc-400"}`}>
+              <span className={`ms-1.5 text-[10px] ${active?.id === group.id ? "text-white/80" : "text-zinc-400"}`}>
                 {group.done}/{group.total}
               </span>
             </button>
@@ -509,7 +578,7 @@ function AdminDraftView({
                 type="button"
                 onClick={() => selectGroup(group.id)}
                 className={`flex w-full items-center justify-between gap-2 rounded-2xl px-3 py-2.5 text-start transition ${
-                  active.id === group.id
+                  active?.id === group.id
                     ? "bg-assis-blue-light text-assis-blue-deep shadow-sm"
                     : "text-muted-foreground hover:bg-white/70 hover:text-foreground"
                 }`}
@@ -517,7 +586,7 @@ function AdminDraftView({
                 <span className="min-w-0 text-[13px] font-medium leading-snug">
                   {he ? group.titleHe : group.title}
                 </span>
-                <span className={`shrink-0 text-[11px] ${active.id === group.id ? "text-assis-blue-deep/70" : "text-zinc-400"}`}>
+                <span className={`shrink-0 text-[11px] ${active?.id === group.id ? "text-assis-blue-deep/70" : "text-zinc-400"}`}>
                   {group.done >= group.total && group.total > 0 ? "✓" : `${group.done}/${group.total}`}
                 </span>
               </button>
@@ -531,6 +600,9 @@ function AdminDraftView({
               {draft.storeUrl.replace(/\/$/, "")}
             </div>
             <div className="space-y-8 px-4 py-5 sm:px-7 sm:py-8">
+              {categories.length === 0 ? (
+                <p className="text-[14px] text-muted-foreground">{t.emptyCategory}</p>
+              ) : null}
               {filtering && displayCategories.length === 0 ? (
                 <p className="text-[14px] text-muted-foreground">{t.filterEmpty}</p>
               ) : null}

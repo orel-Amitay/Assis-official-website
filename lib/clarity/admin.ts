@@ -99,3 +99,33 @@ export async function listAdminDraftAnswers(): Promise<AdminDraftAnswers[]> {
     ];
   });
 }
+
+export async function copyAdminDraft(input: {
+  sourceUserId: string;
+  sourceDraftId: string;
+  destUserId: string;
+  destDraftId: string;
+}) {
+  await ensureClaritySchema();
+  const db = sql();
+  const updated = (await db`
+    UPDATE clarity_drafts AS dest
+    SET
+      store_url = src.store_url,
+      store_name = src.store_name,
+      scanned_at = src.scanned_at,
+      pages = src.pages,
+      demo = src.demo,
+      lang = src.lang,
+      payload = src.payload,
+      saved_at = now(),
+      deleted_at = NULL
+    FROM clarity_drafts AS src
+    WHERE src.user_id = ${input.sourceUserId}
+      AND src.id = ${input.sourceDraftId}
+      AND dest.user_id = ${input.destUserId}
+      AND dest.id = ${input.destDraftId}
+    RETURNING dest.id, dest.store_name, dest.store_url, dest.saved_at
+  `) as { id: string; store_name: string; store_url: string; saved_at: string | Date }[];
+  return updated[0] || null;
+}
